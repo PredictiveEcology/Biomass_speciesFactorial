@@ -184,13 +184,14 @@ Init <- function(sim) {
   on.exit({
     suppressMessages(do.call(setPaths, pathsOrig))
     })
-  mySimOut <- 
-    simInitAndSpades(
+  
+  mySimOut <- Cache(
+    simInitAndSpades,
     times = times, params = parameters, modules = modules, 
     paths = paths,
-    objects = objects, outputs = outputs, debug = 1)#,
-    #.cacheExtra = dig, omitArgs = c("params", "paths", "objects", "outputs")
-  #)
+    objects = objects, outputs = outputs, debug = 1,
+    .cacheExtra = dig, omitArgs = c("params", "paths", "objects", "outputs")
+  )
   
   options(opts)
   
@@ -202,14 +203,14 @@ Init <- function(sim) {
     cdFiles <- as.data.table(outputs(mySimOut))[saved == TRUE]
   else  {
     cdFiles <- dir(paths$outputPath, pattern = "cohortData_year", full.names = TRUE)
-    cdFiles <- data.table(file = cdFiles, saveTime = as.integer(gsub(".+year(.+)\\.qs", "\\1", cdFiles)))
+    cdFiles <- data.table(file = cdFiles, saveTime = as.integer(gsub(".+year(.+)\\.qs", "\\1", cdFiles)), fun = "qread", package = "qs")
   }
   
   fEs <- .fileExtensions()
   cdsList <- by(cdFiles, cdFiles[, "saveTime"], function(x) {
     fE <- reproducible:::fileExt(x$file)
     wh <- fEs[fEs$exts %in% fE,]
-    getFromNamespace(wh$fun, ns = asNamespace(wh$package))(x$file)
+    getFromNamespace(wh$fun, ns = asNamespace(wh$package))(x$file)[, .(speciesCode, age, B, pixelGroup)]
   })  
   
   cds <- rbindlist(cdsList, use.names = TRUE, fill = TRUE)
@@ -219,7 +220,7 @@ Init <- function(sim) {
   # temp <- species1[, .(species, maxANPPpct)]
   # cds <- cds[temp, on = c("speciesCode" = 'species')]
   # saveRDS(cds, file = "factorialCohortData.Rdat")
-  sim$cohortDataFactorial <- cds[, .(speciesCode, age, B, pixelGroup)]
+  sim$cohortDataFactorial <- cds
   # set(cds, NULL, c("ecoregionGroup", "mortalitly", "aANPPAct"), NULL)
   sim$speciesTableFactorial <- speciesTable[,.(species, longevity, growthcurve, mortalityshape, mANPPproportion)]
   
