@@ -217,13 +217,12 @@ RunExperiment <- function(sim) {
     suppressMessages(do.call(setPaths, mod$pathsOrig))
     options(opts)
   })
-  mySimIn <- simInit(
-    times = mod$times, params = parameters, modules = modules,
-    paths = mod$paths,
-    objects = objects, outputs = sim$factorialOutputs)
-
   # don't need the simList --> we are doing this for the sideeffects of cohortData files
-  mySimOut <- spades(mySimIn, debug = 1)
+  mySimOut <- Cache(simInitAndSpades,
+                    times = mod$times, params = parameters, modules = modules,
+                    paths = mod$paths,
+                    objects = objects, outputs = sim$factorialOutputs, debug = 1,
+                    userTags = "runExperimentSimInit")
   return(invisible(sim))
 }
 
@@ -282,7 +281,7 @@ subsampleForPlot <- function(cds, speciesTableFactorial) {
 
 ggplotFactorial <- function(ff) {
   sam <- unique(ff$pixelGroup)
-  title <- paste0("Factorial Experiment: ", length(sam), " random plot")
+  title <- paste0("Factorial Experiment: ", length(sam), " random plots")
   gg1 <- ggplot(ff, aes(x = age, y = B, colour = Sp)) +
     geom_line() +
     facet_wrap(~ Title, nrow = ceiling(sqrt(length(sam))), scales = "fixed") +

@@ -77,7 +77,7 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
 
   set(speciesOut, NULL, "mortalityshape", asInteger(speciesOut$mortalityshape))
   set(speciesOut, NULL, "longevity", asInteger(speciesOut$longevity))
-  speciesOut[,.(species, longevity, growthcurve, mortalityshape, mANPPproportion)]
+  speciesOut[,.(species, longevity, growthcurve, mortalityshape, mANPPproportion, pixelGroup)]
 }
 
 #'
@@ -116,7 +116,7 @@ factorialSpeciesEcoregion <- function(speciesTable) {
 
 
 factorialSpeciesTableFillOut <- function(speciesTable) {
-  speciesTableInner <- copy(speciesTable[, c("species", "longevity", "growthcurve", "mortalityshape", "mANPPproportion")])
+  speciesTableInner <- speciesTable[, c("species", "longevity", "growthcurve", "mortalityshape", "mANPPproportion", "pixelGroup")]
   speciesTableInner[, c("sexualmature", 'seeddistance_eff', 'seeddistance_max', 'resproutprob',
                         'resproutage_min', 'resproutage_max', 'postfireregen',
                         'leaflongevity', 'wooddecayrate', 'leafLignin', 'hardsoft', "Area", "firetolerance",
