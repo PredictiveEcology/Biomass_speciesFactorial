@@ -32,34 +32,26 @@ For help writing in R Markdown, see https://rmarkdown.rstudio.com/.
 #This script is for running the species traits factorial design. 
 # it requires a version of Biomass_core that is gitIgnored. The versino had many changes to accomodate the 'no regeneration' scenario
 # Many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
-rootDir <- file.path("~/Yield")
-if (isTRUE(identical(Sys.info()[["user"]], "elmci1"))) {
-  options(repos = c(CRAN = "https://cloud.r-project.org/"),
-          "Require.install" = FALSE)
-  rootDir <- "~/projects/def-elmci1-ab/elmci1/Yield"
-}
-options(reproducible.showSimilar = TRUE, reproducible.inputPaths = file.path(dirname(rootDir),"/Eliot/data"),
+options(reproducible.showSimilar = TRUE, 
         reproducible.useMemoise = FALSE, reproducible.cacheSaveFormat = "qs", spades.moduleCodeChecks = FALSE,
         reproducible.showSimilarDepth = 5, spades.recoveryMode = FALSE)
+
+# Packages
 if (!require("Require")) {install.packages("Require"); require("Require")}
-Require("PredictiveEcology/SpaDES.install")
+Require("PredictiveEcology/SpaDES.install", upgrade = FALSE)
 installSpaDES()
-# doExperiment <- TRUE
-# 
-Require(c(#"PredictiveEcology/SpaDES.core@simBackup (>= 1.0.9.9005)",
-          "PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)"
-          #, "PredictiveEcology/LandR@minRelativeB (>= 1.0.6.9007)"
-          #,  "data.table", "raster", "viridis", "ggplot2" 
-),
-upgrade = FALSE)
-moduleNameAndBranch <- c("Biomass_core@development") #, "Biomass_speciesParameters@EliotTweaks")
+Require(c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)",
+          "reproducible"), upgrade = FALSE)
+
+# Modules
 setPaths(rasterPath = "temp",
          cachePath =  file.path("temp/Cache"),
          modulePath = file.path("modules"),
          inputPath = file.path(getwd(), "inputs"),
          outputPath = file.path(getwd(),"outputs"))
 
-moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks"#, "Biomass_borealDataPrep@development", 
+moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks",
+                         "Biomass_speciesFactorial@main"#, "Biomass_borealDataPrep@development", 
                          #"Biomass_core@development"
                          )
 lapply(moduleNameAndBranch, function(modName) {

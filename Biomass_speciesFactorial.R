@@ -111,13 +111,13 @@ Init <- function(sim) {
   mod$times <- list(start = 0, end = endTime)
 
   message("Setting up factorial combinations of species traits, and associated initial cohortData table")
-  mod$dig <- fastdigest::fastdigest(sim$argsForFactorial)
+  mod$dig <- CacheDigest(sim$argsForFactorial)$outputHash
   mod$pathsOrig <- getPaths()
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
   })
   mod$paths <- mod$pathsOrig
-  mod$paths$outputPath <- dataPath(sim)
+  mod$paths$outputPath <- file.path(dataPath(sim), mod$dig)
 
   sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
                                 paths = mod$paths, .cacheExtra = mod$dig, omitArgs = "paths")
@@ -251,7 +251,7 @@ plotFun <- function(sim) {
                              .cacheExtra = mod$dig,
                              omitArgs = c("cds", "speciesTableFactorial"))
   Plots(cohortDataForPlot, usePlot = FALSE,
-        fn = ggplotFactorial, filename = paste0("cohortFactorial_", Sys.time()),
+        fn = ggplotFactorial, filename = paste0("cohortFactorial_", sim$._startClockTime),
         ggsaveArgs = list( width = 12, height = 7))
   return(invisible(sim))
 }
