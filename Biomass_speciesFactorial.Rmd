@@ -39,7 +39,7 @@ if (isTRUE(identical(Sys.info()[["user"]], "elmci1"))) {
   rootDir <- "~/projects/def-elmci1-ab/elmci1/Yield"
 }
 options(reproducible.showSimilar = TRUE, reproducible.inputPaths = file.path(dirname(rootDir),"/Eliot/data"),
-        reproducible.useMemoise = TRUE, reproducible.cacheSaveFormat = "qs", spades.moduleCodeChecks = FALSE,
+        reproducible.useMemoise = FALSE, reproducible.cacheSaveFormat = "qs", spades.moduleCodeChecks = FALSE,
         reproducible.showSimilarDepth = 5, spades.recoveryMode = FALSE)
 if (!require("Require")) {install.packages("Require"); require("Require")}
 Require("PredictiveEcology/SpaDES.install")
@@ -68,34 +68,47 @@ lapply(moduleNameAndBranch, function(modName) {
 })
 modules <- gsub("@.+", "", moduleNameAndBranch)
 modules <- c("Biomass_speciesFactorial", modules)
-objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-                             growthcurve = seq(0.65, 0.85, 0.02),
-                             mortalityshape = seq(20, 25, 1),
-                             longevity = seq(125, 400, 25), # not 600 -- too big
-                             mANPPproportion = seq(3.5, 6, 0.25))
-)
 
 outputs <- data.frame(expand.grid(objectName = c("species", "speciesEcoregion"),
                                   saveTime = 0,
                                   eventPriority = 10, fun = "qs::qsave",
                                   stringsAsFactors = FALSE))
 
-# objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-#                                         growthcurve = seq(0.65, 0.85, 1),
-#                                         mortalityshape = seq(20, 25, 5),
-#                                         longevity = seq(125, 600, 100),
-#                                         mANPPproportion = seq(3.5, 6, 1))
-# )
-simInitAndSpades(
+# Slow and large
+objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
+                                        growthcurve = seq(0.65, 0.85, 0.02),
+                                        mortalityshape = seq(20, 25, 1),
+                                        longevity = seq(125, 400, 25), # not 600 -- too big
+                                        mANPPproportion = seq(3.5, 6, 0.25))
+)
+
+# Fast
+objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
+                                        growthcurve = seq(0.65, 0.85, 0.1),
+                                        mortalityshape = seq(20, 25, 5),
+                                        longevity = seq(125, 600, 100),
+                                        mANPPproportion = seq(3.5, 6, 1))
+)
+# Medium
+objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
+                                        growthcurve = seq(0.65, 0.85, 0.02),
+                                        mortalityshape = seq(20, 25, 2),
+                                        longevity = seq(125, 600, 50),
+                                        mANPPproportion = seq(3.5, 6, 0.3))
+)
+
+simOut <- simInitAndSpades(
   times = list(start = 0, end = 0), # params = parameters, 
   modules = modules, 
-  params = list(Biomass_speciesFactorial = list(.plots = "pdf",
-                                                runExperiment = F),
+  params = list(Biomass_speciesFactorial = list(.plots = NA,#"pdf",
+                                                runExperiment = T),
                 Biomass_speciesParameters = list(.plots = "pdf")),
   outputs = outputs,
   objects = objects,
   debug = 1
 )
+
+
 
 
 ```
