@@ -39,7 +39,7 @@ defineModule(sim, list(
     ## .seed is optional: `list('init' = 123)` will `set.seed(123)` for the `init` event only.
     defineParameter(".seed", "list", list(), NA, NA,
                     "Named list of seeds to use for each event (names)."),
-    defineParameter(".useCache", "logical", FALSE, NA, NA,
+    defineParameter(".useCache", "character", NA, NA, NA,
                     "Should caching of events or module be used?")
   ),
   inputObjects = bindrows(
@@ -86,7 +86,8 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       sim <- RunExperiment(sim)
     },
     readExperimentFiles = {
-      sim <- ReadExperimentFiles(sim)
+      sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
+                                       .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
     },
     plot = {
       plotFun(sim) # example of a plotting function
@@ -102,49 +103,57 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
 ## event functions
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
-### template initialization
 Init <- function(sim) {
 
   # The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
   #   if desired. We will still have the list of files that would be created.
-  mod$times <- list(start = 0, end = max(sim$argsForFactorial$longevity))
-  outputs <- data.frame(expand.grid(objectName = "cohortData",
-                                    saveTime = unique(seq(mod$times$start, mod$times$end, by = 10)),
-                                    eventPriority = 1, fun = "qs::qsave",
-                                    stringsAsFactors = FALSE))
+  endTime <- max(sim$argsForFactorial$longevity)
+  mod$times <- list(start = 0, end = endTime)
+
+  message("Setting up factorial combinations of species traits, and associated initial cohortData table")
+  mod$dig <- fastdigest::fastdigest(sim$argsForFactorial)
   mod$pathsOrig <- getPaths()
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
   })
   mod$paths <- mod$pathsOrig
   mod$paths$outputPath <- dataPath(sim)
-  suppressMessages(ss <- simInit(paths = mod$paths, outputs = outputs, times = mod$times))
-  sim$factorialOutputs <- outputs(ss)
-  message("Setting up factorial combinations of species traits, and associated initial cohortData table")
 
+  sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
+                                paths = mod$paths, .cacheExtra = mod$dig, omitArgs = "paths")
   # Next sequence is all dependent on argsForFactorial, so do digest once
-  dig <- fastdigest::fastdigest(sim$argsForFactorial)
   species1And2 <- Cache(do.call, factorialSpeciesTable, sim$argsForFactorial,
-                        .cacheExtra = dig, omitArgs = c("args"))
-  mod$speciesEcoregion <- Cache(factorialSpeciesEcoregion, species1And2, .cacheExtra = dig, omitArgs = c("speciesTable"))
-  mod$cohortData <- Cache(factorialCohortData, species1And2, mod$speciesEcoregion, .cacheExtra = dig,
-                          omitArgs = c("speciesTable", "speciesEcoregion"))
-  speciesTable <- Cache(factorialSpeciesTableFillOut, species1And2, .cacheExtra = dig,
-                        omitArgs = "speciesTable")
-  sim$speciesTableFactorial <- speciesTable[,.(species, longevity, growthcurve, mortalityshape, mANPPproportion)]
+                        .cacheExtra = mod$dig, omitArgs = c("args"))
+  speciesTable <- Cache(factorialSpeciesTableFillOut, species1And2,
+                        .cacheExtra = mod$dig, omitArgs = "speciesTable")
+  sim$speciesTableFactorial <- speciesTable
 
   return(invisible(sim))
 }
 
+factorialOutputs <- function(times, paths) {
+  outputs <- data.frame(expand.grid(objectName = "cohortData",
+                                    saveTime = unique(seq(times$start, times$end, by = 10)),
+                                    eventPriority = 1, fun = "qs::qsave",
+                                    stringsAsFactors = FALSE))
+  suppressMessages(ss <- simInit(paths = paths, outputs = outputs, times = mod$times))
+  outputs(ss)
+}
+
+
 RunExperiment <- function(sim) {
 
+  speciesEcoregion <- Cache(factorialSpeciesEcoregion, sim$speciesTableFactorial, .cacheExtra = mod$dig, omitArgs = c("speciesTable"))
+  cohortData <- Cache(factorialCohortData, sim$speciesTableFactorial, speciesEcoregion, .cacheExtra = mod$dig,
+                      omitArgs = c("speciesTable", "speciesEcoregion"))
+
   # Maps
-  pixelGroupMap <- factorialPixelGroupMap(mod$cohortData)
+  pixelGroupMap <- factorialPixelGroupMap(cohortData)
   studyArea <- as(extent(pixelGroupMap), 'SpatialPolygons')
   crs(studyArea) <- crs(pixelGroupMap)
   rasterToMatch <- pixelGroupMap
   ecoregionMap <- pixelGroupMap
-  levels(ecoregionMap) <- data.frame(ID = 1:max(mod$cohortData$pixelGroup, na.rm = TRUE),
+  levels(ecoregionMap) <- data.frame(ID = 1:max(cohortData$pixelGroup, na.rm = TRUE),
                                      ecoregion = 1, ecoregionGroup = 1, stringsAsFactors = TRUE)
 
   # Simple Tables
@@ -183,9 +192,9 @@ RunExperiment <- function(sim) {
   objects <- list(
     "studyArea" = studyArea,
     "rasterToMatch" = rasterToMatch,
-    cohortData = mod$cohortData,
+    cohortData = cohortData,
     species = sim$speciesTableFactorial,
-    speciesEcoregion = mod$speciesEcoregion,
+    speciesEcoregion = speciesEcoregion,
     pixelGroupMap = pixelGroupMap,
     speciesLayers = speciesLayers,
     minRelativeB = minRelativeB,
@@ -194,9 +203,6 @@ RunExperiment <- function(sim) {
     sppEquiv = data.table(),
     sppColorVect = sppColors
   )
-
-
-  # set.seed(161616)
 
   opts <- options(
     "LandR.assertions" = FALSE,
@@ -208,27 +214,23 @@ RunExperiment <- function(sim) {
 
   message("Running simulation with all combinations; cohortData objects are saved in ", mod$paths$outputPath)
   on.exit({
-    suppressMessages(do.call(setPaths, pathsOrig))
+    suppressMessages(do.call(setPaths, mod$pathsOrig))
     options(opts)
   })
-  # Put this in now in case it crashes
   mySimIn <- simInit(
     times = mod$times, params = parameters, modules = modules,
     paths = mod$paths,
-    objects = objects, outputs = sim$factorialOutputs#,
-    #    debug = 1,
-    #.cacheExtra = dig, omitArgs = c("params", "paths", "objects", "outputs")
-  )
+    objects = objects, outputs = sim$factorialOutputs)
+
   # don't need the simList --> we are doing this for the sideeffects of cohortData files
   mySimOut <- spades(mySimIn, debug = 1)
   return(invisible(sim))
 }
 
-ReadExperimentFiles <- function(sim) {
-
+ReadExperimentFiles <- function(factorialOutputs) {
 
   fEs <- .fileExtensions()
-  cdsList <- by(sim$factorialOutputs, sim$factorialOutputs[, "saveTime"], function(x) {
+  cdsList <- by(factorialOutputs, factorialOutputs[, "saveTime"], function(x) {
     fE <- reproducible:::fileExt(x$file)
     wh <- fEs[fEs$exts %in% fE,]
     message(crayon::green("reading: "))
@@ -240,45 +242,47 @@ ReadExperimentFiles <- function(sim) {
   message("rbindlisting the cohortData objects")
   cds <- rbindlist(cdsList, use.names = TRUE, fill = TRUE)
 
-  sim$cohortDataFactorial <- cds
-  return(invisible(sim))
+  return(invisible(cds))
 }
 
 ### template for plot events
 plotFun <- function(sim) {
-  Plots(sim$cohortDataFactorial, usePlot = FALSE,
+  cohortDataForPlot <- Cache(subsampleForPlot, sim$cohortDataFactorial,
+                             sim$speciesTableFactorial,
+                             .cacheExtra = mod$dig,
+                             omitArgs = c("cds", "speciesTableFactorial"))
+  Plots(cohortDataForPlot, usePlot = FALSE,
         fn = ggplotFactorial, filename = paste0("cohortFactorial_", Sys.time()),
-        speciesTableFactorial = sim$speciesTableFactorial,
         ggsaveArgs = list( width = 12, height = 7))
   return(invisible(sim))
 }
 
-
-ggplotFactorial <- function(cds, speciesTableFactorial) {
+subsampleForPlot <- function(cds, speciesTableFactorial) {
   uniq <- unique(cds$pixelGroup)
-  cds[, Sp := gsub(".+_", "", speciesCode)];
-  cds[grep("^Sp", Sp, invert = TRUE), Sp := "Single"]
-  cds[, maxB := max(B), by = "pixelGroup"]
-  setkeyv(cds, c("pixelGroup", "Sp", "age"))
-  cds[, diffB := B[2] - B[1], by = c("age", "pixelGroup")]
-  cds[is.na(diffB), diffB := 0]
-  cds[, maxDiffB := max(diffB, na.rm = TRUE), by = c("pixelGroup")]
-  setorderv(cds, "maxDiffB")
-
-  # maxDiffBs <- head(unique(cds$maxDiffB), 40)
-
   sam <- Cache(sample, uniq, 64)
   ff <- cds[pixelGroup %in% sam];
-  # ff <- cds[maxDiffB %in% maxDiffBs];
+  ff[, Sp := gsub(".+_", "", speciesCode)];
+  ff[grep("^Sp", Sp, invert = TRUE), Sp := "Single"]
+  ff[, maxB := max(B), by = "pixelGroup"]
+  setkeyv(ff, c("pixelGroup", "Sp", "age"))
+  ff[, diffB := B[2] - B[1], by = c("age", "pixelGroup")]
+  ff[is.na(diffB), diffB := 0]
+  ff[, maxDiffB := max(diffB, na.rm = TRUE), by = c("pixelGroup")]
+  setorderv(ff, "maxDiffB")
+
   ff <- speciesTableFactorial[ff, on = c("species" = "speciesCode")]
 
-  # ff <- ff[pixelGroup %in% sample(unique(ff$pixelGroup), 49)];
   ff[, Title := paste0(maxDiffB, "_", pixelGroup)]
   ff[,
      params := paste0(unique(Sp),"(l=",unique(longevity),";g=",unique(growthcurve), ";m=",unique(mortalityshape),";p=", unique(mANPPproportion ),")"),
      by = c("Sp", "pixelGroup")]
   ff[, Title := paste0(unique(params), collapse = "\n"), by = "pixelGroup"]
-  title <- paste0("Factorial Experiment: ", length(sam), "random")
+  ff
+}
+
+ggplotFactorial <- function(ff) {
+  sam <- unique(ff$pixelGroup)
+  title <- paste0("Factorial Experiment: ", length(sam), " random plot")
   gg1 <- ggplot(ff, aes(x = age, y = B, colour = Sp)) +
     geom_line() +
     facet_wrap(~ Title, nrow = ceiling(sqrt(length(sam))), scales = "fixed") +
