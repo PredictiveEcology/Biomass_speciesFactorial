@@ -15,8 +15,8 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
-  reqdPkgs = list("ggplot2", "raster", "PredictiveEcology/LandR@minRelativeB (>= 1.0.6.9007)",
-                  "crayon"),
+  reqdPkgs = list("ggplot2", "raster", "PredictiveEcology/LandR@minRelativeB (>=1.0.6.9007)",
+                  "crayon", "PredictiveEcology/SpaDES.install (>=0.0.5.9013)"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plots", "character", "screen", NA, NA,
@@ -111,13 +111,13 @@ Init <- function(sim) {
   mod$times <- list(start = 0, end = endTime)
 
   message("Setting up factorial combinations of species traits, and associated initial cohortData table")
-  mod$dig <- CacheDigest(sim$argsForFactorial)$outputHash
+  mod$dig <- fastdigest::fastdigest(sim$argsForFactorial)
   mod$pathsOrig <- getPaths()
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
   })
   mod$paths <- mod$pathsOrig
-  mod$paths$outputPath <- file.path(dataPath(sim), mod$dig)
+  mod$paths$outputPath <- dataPath(sim)
 
   sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
                                 paths = mod$paths, .cacheExtra = mod$dig, omitArgs = "paths")
@@ -164,11 +164,9 @@ RunExperiment <- function(sim) {
   sppColors <- viridis::viridis(n = NROW(sim$speciesTableFactorial))
   names(sppColors) <-  sim$speciesTableFactorial$species
 
-  moduleNameAndBranch <- c("Biomass_core@development") #, "Biomass_speciesParameters@EliotTweaks")
+  moduleNameAndBranch <- c("Biomass_core@EliotTweaks (>= 1.3.5)")
   modules <- gsub("@.+", "", moduleNameAndBranch)
-  if (!dir.exists(file.path(modulePath(sim), modules)))
-    try(Cache(getModule, file.path("PredictiveEcology", moduleNameAndBranch), #modulePath = getPaths()$modulePath,
-              overwrite = FALSE))
+  getModule(moduleNameAndBranch, overwrite = TRUE) # will only overwrite if wrong version
 
   parameters <- list(
     Biomass_core = list(.saveInitialTime = NA,
@@ -217,12 +215,13 @@ RunExperiment <- function(sim) {
     suppressMessages(do.call(setPaths, mod$pathsOrig))
     options(opts)
   })
+  mySimIn <- simInit(
+    times = mod$times, params = parameters, modules = modules,
+    paths = mod$paths,
+    objects = objects, outputs = sim$factorialOutputs)
+
   # don't need the simList --> we are doing this for the sideeffects of cohortData files
-  mySimOut <- Cache(simInitAndSpades,
-                    times = mod$times, params = parameters, modules = modules,
-                    paths = mod$paths,
-                    objects = objects, outputs = sim$factorialOutputs, debug = 1,
-                    userTags = "runExperimentSimInit")
+  mySimOut <- spades(mySimIn, debug = 1)
   return(invisible(sim))
 }
 
@@ -251,7 +250,7 @@ plotFun <- function(sim) {
                              .cacheExtra = mod$dig,
                              omitArgs = c("cds", "speciesTableFactorial"))
   Plots(cohortDataForPlot, usePlot = FALSE,
-        fn = ggplotFactorial, filename = paste0("cohortFactorial_", sim$._startClockTime),
+        fn = ggplotFactorial, filename = paste0("cohortFactorial_", Sys.time()),
         ggsaveArgs = list( width = 12, height = 7))
   return(invisible(sim))
 }
@@ -281,7 +280,7 @@ subsampleForPlot <- function(cds, speciesTableFactorial) {
 
 ggplotFactorial <- function(ff) {
   sam <- unique(ff$pixelGroup)
-  title <- paste0("Factorial Experiment: ", length(sam), " random plots")
+  title <- paste0("Factorial Experiment: ", length(sam), " random plot")
   gg1 <- ggplot(ff, aes(x = age, y = B, colour = Sp)) +
     geom_line() +
     facet_wrap(~ Title, nrow = ceiling(sqrt(length(sam))), scales = "fixed") +
