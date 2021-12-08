@@ -111,13 +111,13 @@ Init <- function(sim) {
   mod$times <- list(start = 0, end = endTime)
 
   message("Setting up factorial combinations of species traits, and associated initial cohortData table")
-  mod$dig <- fastdigest::fastdigest(sim$argsForFactorial)
+  mod$dig <- CacheDigest(sim$argsForFactorial)$outputHash
   mod$pathsOrig <- getPaths()
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
   })
   mod$paths <- mod$pathsOrig
-  mod$paths$outputPath <- dataPath(sim)
+  mod$paths$outputPath <- file.path(dataPath(sim), paste0("factorial_", mod$dig))
 
   sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
                                 paths = mod$paths, .cacheExtra = mod$dig, omitArgs = "paths")
