@@ -100,10 +100,10 @@ factorialCohortData <- function(speciesTable, speciesEcoregion) {
 }
 
 
-factorialSpeciesEcoregion <- function(speciesTable) {
+factorialSpeciesEcoregion <- function(speciesTable, maxBInFactorial) {
   speciesEcoregion <- speciesTable[, c("species", "mANPPproportion")]
 
-  set(speciesEcoregion, NULL, "maxB", 5000L)
+  set(speciesEcoregion, NULL, "maxB", maxBInFactorial)
   set(speciesEcoregion, NULL, "maxANPP", speciesEcoregion$maxB * speciesEcoregion$mANPPproportion/100)
   speciesEcoregion[, c("ecoregionGroup", "establishprob", "year") := .(factor(1), 0.5, 0)]
   setnames(speciesEcoregion, old = "species", new = "speciesCode")
