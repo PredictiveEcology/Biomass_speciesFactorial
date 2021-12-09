@@ -10,7 +10,7 @@ defineModule(sim, list(
   keywords = "",
   authors = structure(list(list(given = c("Eliot", "J.B."), family = "McIntire", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.6"),
+  version = list(Biomass_speciesFactorial = "0.0.7"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -86,7 +86,10 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
     runExperiment = {
-      sim <- Cache(RunExperiment, sim, .cacheExtra = mod$dig, omitArgs = "sim")
+      sim <- Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+                   times = mod$times,
+                   maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
+                   knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
     },
     readExperimentFiles = {
       sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
@@ -146,12 +149,12 @@ factorialOutputs <- function(times, paths) {
 }
 
 
-RunExperiment <- function(sim) {
+RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, factorialOutputs, paths, times) {
 
-  speciesEcoregion <- Cache(factorialSpeciesEcoregion, sim$speciesTableFactorial,
-                            maxBInFactorial = P(sim)$maxBInFactorial,
-                            .cacheExtra = mod$dig, omitArgs = c("speciesTable"))
-  cohortData <- Cache(factorialCohortData, sim$speciesTableFactorial, speciesEcoregion, .cacheExtra = mod$dig,
+  speciesEcoregion <- Cache(factorialSpeciesEcoregion, speciesTableFactorial,
+                            maxBInFactorial = maxBInFactorial,
+                            .cacheExtra = knownDigest, omitArgs = c("speciesTable"))
+  cohortData <- Cache(factorialCohortData, speciesTableFactorial, speciesEcoregion, .cacheExtra = knownDigest,
                       omitArgs = c("speciesTable", "speciesEcoregion"))
 
   # Maps
@@ -168,12 +171,12 @@ RunExperiment <- function(sim) {
   ecoregion <- data.table("ecoregionGroup" = as.factor(1), 'active' = 'yes')
 
   #Make sppColors
-  sppColors <- viridis::viridis(n = NROW(sim$speciesTableFactorial))
-  names(sppColors) <-  sim$speciesTableFactorial$species
+  sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
+  names(sppColors) <-  speciesTableFactorial$species
 
   moduleNameAndBranch <- c("Biomass_core@EliotTweaks (>= 1.3.6)")
   modules <- gsub("@.+", "", moduleNameAndBranch)
-  getModule(moduleNameAndBranch, modulePath = mod$paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+  getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
 
   parameters <- list(
     Biomass_core = list(.saveInitialTime = NA,
@@ -198,7 +201,7 @@ RunExperiment <- function(sim) {
     studyArea = studyArea,
     rasterToMatch = rasterToMatch,
     cohortData = cohortData,
-    species = sim$speciesTableFactorial,
+    species = speciesTableFactorial,
     speciesEcoregion = speciesEcoregion,
     pixelGroupMap = pixelGroupMap,
     speciesLayers = speciesLayers,
@@ -217,15 +220,15 @@ RunExperiment <- function(sim) {
   )
 
 
-  message("Running simulation with all combinations; cohortData objects are saved in ", mod$paths$outputPath)
+  message("Running simulation with all combinations; cohortData objects are saved in ", paths$outputPath)
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
     options(opts)
   })
-  mySimOut <- Cache(simInitAndSpades, .cacheExtra = mod$dig, omitArgs = c("objects", "params", "debug"),
-                    times = mod$times, params = parameters, modules = modules, quick = "paths",
-                    paths = mod$paths,
-                    objects = objects, outputs = sim$factorialOutputs, debug = 1, outputObjects = "pixelGroupMap")
+  mySimOut <- Cache(simInitAndSpades, .cacheExtra = knownDigest, omitArgs = c("objects", "params", "debug", "paths"),
+                    times = times, params = parameters, modules = modules, # quick = "paths",
+                    paths = paths,
+                    objects = objects, outputs = factorialOutputs, debug = 1, outputObjects = "pixelGroupMap")
 
   return(invisible(sim))
 }
