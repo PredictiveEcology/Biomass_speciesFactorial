@@ -10,7 +10,7 @@ defineModule(sim, list(
   keywords = "",
   authors = structure(list(list(given = c("Eliot", "J.B."), family = "McIntire", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.5"),
+  version = list(Biomass_speciesFactorial = "0.0.6"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -42,7 +42,7 @@ defineModule(sim, list(
     ## .seed is optional: `list('init' = 123)` will `set.seed(123)` for the `init` event only.
     defineParameter(".seed", "list", list(), NA, NA,
                     "Named list of seeds to use for each event (names)."),
-    defineParameter(".useCache", "character", "runExperiment", NA, NA,
+    defineParameter(".useCache", "character", NA_character_, NA, NA,
                     "Should caching of events or module be used?")
   ),
   inputObjects = bindrows(
@@ -86,7 +86,7 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
     runExperiment = {
-      sim <- RunExperiment(sim)
+      sim <- Cache(RunExperiment, sim, .cacheExtra = mod$dig, omitArgs = "sim")
     },
     readExperimentFiles = {
       sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
@@ -121,6 +121,7 @@ Init <- function(sim) {
   })
   mod$paths <- mod$pathsOrig
   mod$paths$outputPath <- file.path(dataPath(sim), paste0("factorial_", mod$dig))
+  mod$paths$modulePath <- file.path(dataPath(sim), "module")
   # mod$paths$outputPath <- dataPath(sim)
 
   sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
@@ -170,9 +171,9 @@ RunExperiment <- function(sim) {
   sppColors <- viridis::viridis(n = NROW(sim$speciesTableFactorial))
   names(sppColors) <-  sim$speciesTableFactorial$species
 
-  moduleNameAndBranch <- c("Biomass_core@EliotTweaks (>= 1.3.5)")
+  moduleNameAndBranch <- c("Biomass_core@EliotTweaks (>= 1.3.6)")
   modules <- gsub("@.+", "", moduleNameAndBranch)
-  getModule(moduleNameAndBranch, overwrite = TRUE) # will only overwrite if wrong version
+  getModule(moduleNameAndBranch, modulePath = mod$paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
 
   parameters <- list(
     Biomass_core = list(.saveInitialTime = NA,
@@ -182,7 +183,7 @@ RunExperiment <- function(sim) {
                         calcSummaryBGM = NULL,
                         .plots = NULL,
                         .maxMemory = 1e9,
-                        .useCache = ".inputObjects",
+                        .useCache = NULL,
                         successionTimestep = 10,
                         initialBiomassSource = "cohortData",
                         vegLeadingProportion = 0
@@ -194,8 +195,8 @@ RunExperiment <- function(sim) {
 
   #sppEquiv needed or module stops, but object unused, likewise with speciesLayers
   objects <- list(
-    "studyArea" = studyArea,
-    "rasterToMatch" = rasterToMatch,
+    studyArea = studyArea,
+    rasterToMatch = rasterToMatch,
     cohortData = cohortData,
     species = sim$speciesTableFactorial,
     speciesEcoregion = speciesEcoregion,
@@ -221,13 +222,15 @@ RunExperiment <- function(sim) {
     suppressMessages(do.call(setPaths, mod$pathsOrig))
     options(opts)
   })
-  mySimIn <- simInit(
-    times = mod$times, params = parameters, modules = modules,
+  #pf <- profvis::profvis({
+  mySimOut <- simInitAndSpades(#.cacheExtra = mod$dig, omitArgs = c("objects", "params", "debug"),
+    times = mod$times, params = parameters, modules = modules, #quick = "paths",
     paths = mod$paths,
-    objects = objects, outputs = sim$factorialOutputs)
+    objects = objects, outputs = sim$factorialOutputs, debug = 1)#, outputObjects = "pixelGroupMap")
 
   # don't need the simList --> we are doing this for the sideeffects of cohortData files
-  mySimOut <- spades(mySimIn, debug = 1)
+  # mySimOut <- spades(mySimIn, debug = 1)
+  #})
   return(invisible(sim))
 }
 
@@ -255,8 +258,9 @@ plotFun <- function(sim) {
                              sim$speciesTableFactorial,
                              .cacheExtra = mod$dig,
                              omitArgs = c("cds", "speciesTableFactorial"))
+  # Filename on Windows can't have colon ":"
   Plots(cohortDataForPlot, usePlot = FALSE,
-        fn = ggplotFactorial, filename = paste0("cohortFactorial_", Sys.time()),
+        fn = ggplotFactorial, filename = paste0("cohortFactorial_", gsub(":", "_", Sys.time())),
         ggsaveArgs = list( width = 12, height = 7))
   return(invisible(sim))
 }
