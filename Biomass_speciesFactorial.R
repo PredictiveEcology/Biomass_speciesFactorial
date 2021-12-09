@@ -222,15 +222,11 @@ RunExperiment <- function(sim) {
     suppressMessages(do.call(setPaths, mod$pathsOrig))
     options(opts)
   })
-  #pf <- profvis::profvis({
-  mySimOut <- simInitAndSpades(#.cacheExtra = mod$dig, omitArgs = c("objects", "params", "debug"),
-    times = mod$times, params = parameters, modules = modules, #quick = "paths",
-    paths = mod$paths,
-    objects = objects, outputs = sim$factorialOutputs, debug = 1)#, outputObjects = "pixelGroupMap")
+  mySimOut <- Cache(simInitAndSpades, .cacheExtra = mod$dig, omitArgs = c("objects", "params", "debug"),
+                    times = mod$times, params = parameters, modules = modules, quick = "paths",
+                    paths = mod$paths,
+                    objects = objects, outputs = sim$factorialOutputs, debug = 1, outputObjects = "pixelGroupMap")
 
-  # don't need the simList --> we are doing this for the sideeffects of cohortData files
-  # mySimOut <- spades(mySimIn, debug = 1)
-  #})
   return(invisible(sim))
 }
 
