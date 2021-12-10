@@ -10,7 +10,7 @@ defineModule(sim, list(
   keywords = "",
   authors = structure(list(list(given = c("Eliot", "J.B."), family = "McIntire", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.7"),
+  version = list(Biomass_speciesFactorial = "0.0.8"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
