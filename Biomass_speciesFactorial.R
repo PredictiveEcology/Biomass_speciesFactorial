@@ -39,6 +39,11 @@ defineModule(sim, list(
     defineParameter("maxBInFactorial", "integer", 5000L, NA, NA,
                     "The arbitrary maximum biomass for the factorial simulations. This ",
                     "is a per-species maximum within a pixel"),
+    defineParameter("factorialSize", "character", "small", "medium", "large",
+                    "If user does not supply an explicit argsForFactoria, then they can ",
+                    "specify either 'small', 'medium' or 'large' to take default ones that ",
+                    "have different numbers of factorial combinations. Smaller is faster and uses less RAM; ",
+                    "larger is slower and uses more RAM."),
     ## .seed is optional: `list('init' = 123)` will `set.seed(123)` for the `init` event only.
     defineParameter(".seed", "list", list(), NA, NA,
                     "Named list of seeds to use for each event (names)."),
@@ -86,10 +91,10 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
     runExperiment = {
-      sim <- Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
-                   times = mod$times,
-                   maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
-                   knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+      Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+            times = mod$times,
+            maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
+            knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
     },
     readExperimentFiles = {
       sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
@@ -304,11 +309,24 @@ ggplotFactorial <- function(ff) {
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   if (!suppliedElsewhere("argsForFactorial")) {
-    sim$argsForFactorial <- list(cohortsPerPixel = 1:2,
-                                 growthcurve = seq(0.65, 0.85, 0.02),
-                                 mortalityshape = seq(20, 25, 1),
-                                 longevity = seq(125, 300, 25),
-                                 mANPPproportion = seq(3.5, 6, 0.25))
+    sim$argsForFactorial <-
+      switch(P(sim)$factorialSize,
+             large = list(cohortsPerPixel = 1:2,
+                          growthcurve = seq(0.65, 0.85, 0.02),
+                          mortalityshape = seq(20, 25, 1),
+                          longevity = seq(125, 400, 25), # not 600 -- too big
+                          mANPPproportion = seq(3.5, 6, 0.25)),
+             medium = list(cohortsPerPixel = 1:2,
+                           growthcurve = seq(0.65, 0.85, 0.02),
+                           mortalityshape = seq(20, 25, 2),
+                           longevity = seq(125, 600, 50),
+                           mANPPproportion = seq(3.5, 6, 0.3)),
+             small = list(cohortsPerPixel = 1:2,
+                          growthcurve = seq(0.65, 0.85, 0.2),
+                          mortalityshape = seq(20, 25, 5),
+                          longevity = seq(125, 600, 100),
+                          mANPPproportion = seq(3.5, 6, 1))
+      )
   }
   return(invisible(sim))
 }
