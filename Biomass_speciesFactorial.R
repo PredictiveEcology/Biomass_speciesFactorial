@@ -10,7 +10,7 @@ defineModule(sim, list(
   keywords = "",
   authors = structure(list(list(given = c("Eliot", "J.B."), family = "McIntire", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.8"),
+  version = list(Biomass_speciesFactorial = "0.0.9"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -92,9 +92,9 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
     },
     runExperiment = {
       Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
-            times = mod$times,
-            maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
-            knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+                            times = mod$times,
+                            maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
+                            knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
     },
     readExperimentFiles = {
       sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
@@ -235,7 +235,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
                     paths = paths,
                     objects = objects, outputs = factorialOutputs, debug = 1, outputObjects = "pixelGroupMap")
 
-  return(invisible(sim))
+  return(invisible())
 }
 
 ReadExperimentFiles <- function(factorialOutputs) {
