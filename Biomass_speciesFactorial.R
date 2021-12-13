@@ -10,7 +10,7 @@ defineModule(sim, list(
   keywords = "",
   authors = structure(list(list(given = c("Eliot", "J.B."), family = "McIntire", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.10"),
+  version = list(Biomass_speciesFactorial = "0.0.11"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -241,6 +241,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
 
 ReadExperimentFiles <- function(factorialOutputs) {
   
+  factorialOutputs <- as.data.table(factorialOutputs)[objectName == "cohortData"]
   fEs <- .fileExtensions()
   cdsList <- by(factorialOutputs, factorialOutputs[, "saveTime"], function(x) {
     fE <- reproducible:::fileExt(x$file)
@@ -314,8 +315,8 @@ ggplotFactorial <- function(ff) {
       switch(P(sim)$factorialSize,
              large = list(cohortsPerPixel = 1:2,
                           growthcurve = seq(0.65, 0.85, 0.02),
-                          mortalityshape = seq(20, 25, 1),
-                          longevity = seq(125, 400, 25), # not 600 -- too big
+                          mortalityshape = seq(20, 25, 2),
+                          longevity = seq(125, 600, 25), # not 600 -- too big
                           mANPPproportion = seq(3.5, 6, 0.25)),
              medium = list(cohortsPerPixel = 1:2,
                            growthcurve = seq(0.65, 0.85, 0.02),
