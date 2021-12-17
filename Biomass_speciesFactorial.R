@@ -179,7 +179,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
   names(sppColors) <-  speciesTableFactorial$species
 
-  moduleNameAndBranch <- c("Biomass_core@EliotTweaks (>= 1.3.6)")
+  moduleNameAndBranch <- c("Biomass_core@development (>= 1.3.9)")
   modules <- gsub("@.+", "", moduleNameAndBranch)
   getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
 
