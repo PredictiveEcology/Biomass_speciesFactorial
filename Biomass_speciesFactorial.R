@@ -8,7 +8,9 @@ defineModule(sim, list(
   name = "Biomass_speciesFactorial",
   description = "Build and simulate a fully factorial combination of selected species traits to be used in LANDIS-II type models",
   keywords = "",
-  authors = structure(list(list(given = c("Eliot", "J.B."), family = "McIntire", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
+  authors = c(
+    person("Eliot", "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = "aut")
+  ),
   childModules = character(0),
   version = list(Biomass_speciesFactorial = "0.0.12"),
   timeframe = as.POSIXlt(c(NA, NA)),
