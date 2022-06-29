@@ -205,18 +205,18 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
 
   #sppEquiv needed or module stops, but object unused, likewise with speciesLayers
   objects <- list(
-    studyArea = studyArea,
-    rasterToMatch = rasterToMatch,
     cohortData = cohortData,
-    species = speciesTableFactorial,
-    speciesEcoregion = speciesEcoregion,
-    pixelGroupMap = pixelGroupMap,
-    speciesLayers = speciesLayers,
-    minRelativeB = minRelativeB,
     ecoregion = ecoregion,
     ecoregionMap = ecoregionMap,
+    minRelativeB = minRelativeB,
+    pixelGroupMap = pixelGroupMap,
+    species = speciesTableFactorial,
+    speciesEcoregion = speciesEcoregion,
+    speciesLayers = speciesLayers,
+    sppColorVect = sppColors,
     sppEquiv = data.table(),
-    sppColorVect = sppColors
+    studyArea = studyArea,
+    rasterToMatch = rasterToMatch
   )
 
   opts <- options(
