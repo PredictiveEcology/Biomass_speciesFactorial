@@ -186,24 +186,31 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
 
   parameters <- list(
-    Biomass_core = list(.saveInitialTime = NA,
-                        .saveInterval = NA,
-                        .useParallel = 1,
-                        seedingAlgorithm = "noSeeding",
-                        calcSummaryBGM = NULL,
-                        .plots = NULL,
-                        .maxMemory = 1e9,
-                        .useCache = NULL,
-                        successionTimestep = 10,
-                        initialBiomassSource = "cohortData",
-                        vegLeadingProportion = 0
-    ))
+    Biomass_core = list(
+      .maxMemory = 1e9,
+      .plots = NULL,
+      .saveInitialTime = NA,
+      .saveInterval = NA,
+      .useParallel = 1,
+      .useCache = NULL,
+      calcSummaryBGM = NULL,
+      initialBiomassSource = "cohortData",
+      seedingAlgorithm = "noSeeding",
+      sppEquivCol = "B_factorial",
+      successionTimestep = 10,
+      vegLeadingProportion = 0
+    )
+  )
 
   # Get modules
   #Tree species that are important to us
   speciesLayers <- "species"
 
-  #sppEquiv needed or module stops, but object unused, likewise with speciesLayers
+  ## 2022-06-30 AMC: cannot pass an empty data.table or Biomass_core tries to guess with
+  ## actual species names, and will fail when calling sppHarmonize().
+  sppEquivFactorial <- data.table(B_factorial = speciesTableFactorial$species)
+
+  ## speciesLayers needed or module stops, but object unused
   objects <- list(
     cohortData = cohortData,
     ecoregion = ecoregion,
@@ -214,7 +221,8 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
     speciesEcoregion = speciesEcoregion,
     speciesLayers = speciesLayers,
     sppColorVect = sppColors,
-    sppEquiv = data.table(),
+    sppEquiv = sppEquivFactorial,
+    sppNameVector = speciesTableFactorial$species,
     studyArea = studyArea,
     rasterToMatch = rasterToMatch
   )
