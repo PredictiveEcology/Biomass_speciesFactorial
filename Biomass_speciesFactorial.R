@@ -32,6 +32,10 @@ defineModule(sim, list(
                     "Named list of seeds to use for each event (names)."),
     defineParameter(".useCache", "character", NA_character_, NA, NA,
                     "Should caching of events or module be used?"),
+    defineParameter("initialB", "numeric", 10, 1, NA,
+                    desc = paste("initial biomass values of new age-1 cohorts.",
+                                 "If `NA` or `NULL`, initial biomass will be calculated as in LANDIS-II Biomass Suc. Extension",
+                                 "(see Scheller and Miranda, 2015 or `?LandR::.initiateNewCohorts`)"))
     defineParameter("factorialSize", "character", "small", "medium", "large",
                     paste("If user does not supply an explicit argsForFactoria, then they can",
                           "specify either 'small', 'medium' or 'large' to take default ones that",
@@ -151,6 +155,7 @@ Init <- function(sim) {
                         .cacheExtra = mod$dig, omitArgs = "speciesTable")
   sim$speciesTableFactorial <- speciesTable
 
+  SpaDES.core::paramCheckOtherMods(sim, "initialB", ifSetButDifferent = "warning")
   return(invisible(sim))
 }
 
@@ -174,6 +179,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   cohortData <- Cache(factorialCohortData,
                       speciesTableFactorial,
                       speciesEcoregion,
+                      initialB = P(sim)$initialB,
                       .cacheExtra = knownDigest,
                       omitArgs = c("speciesTable", "speciesEcoregion"))
 
