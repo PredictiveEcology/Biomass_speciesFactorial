@@ -22,7 +22,7 @@ defineModule(sim, list(
                                  "If `NA` or `NULL`, initial biomass will be calculated as in LANDIS-II Biomass Suc. Extension",
                                  "(see Scheller and Miranda, 2015 or `?LandR::.initiateNewCohorts`)")),
     defineParameter("factorialSize", "character", "small", "medium", "large",
-                    paste("If user does not supply an explicit argsForFactoria, then they can",
+                    paste("If user does not supply an explicit `argsForFactorial`, then they can",
                           "specify either 'small', 'medium' or 'large' to take default ones that",
                           "have different numbers of factorial combinations.",
                           "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
@@ -55,7 +55,7 @@ defineModule(sim, list(
   inputObjects = bindrows(
     expectsInput(objectName = "argsForFactorial", objectClass = "list",
                  desc = paste(
-                   "A named list of parameters in the species Table, with the range of values",
+                   "A named list of parameters in the `speciesTable`, with the range of values",
                    "they each should take. Internally, this module will run `expand.grid` on these,",
                    "then will take the 'upper triangle' of the array, including the diagonal."
                  ),
