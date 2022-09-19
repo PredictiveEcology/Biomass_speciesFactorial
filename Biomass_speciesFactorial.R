@@ -209,8 +209,6 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, know
 
   ## TODO: make the following into a function to use across modules (e.g. B_borealDataPrep)
   submodule <- "Biomass_coreSubModule"
-  paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
-  on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
   if (!any(modules == "Biomass_core") ||
       moduleVersion("Biomass_core", paths$modulePath) < "1.3.5") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
