@@ -109,6 +109,7 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
             speciesTableFactorial = sim$speciesTableFactorial,
             paths = mod$paths,
             times = mod$times,
+            modules = modules(sim),
             maxBInFactorial = P(sim)$maxBInFactorial,
             factorialOutputs = sim$factorialOutputs,
             initialB = P(sim)$initialB,
@@ -175,7 +176,8 @@ factorialOutputs <- function(times, paths) {
   outputs(ss)
 }
 
-RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, knownDigest, factorialOutputs, paths, times) {
+RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, knownDigest,
+                          factorialOutputs, paths, times, modules) {
   speciesEcoregion <- Cache(factorialSpeciesEcoregion,
                             speciesTableFactorial,
                             maxBInFactorial = maxBInFactorial,
@@ -212,7 +214,6 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, know
   paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
-  modules <- modules(sim)
   if (!any(modules == "Biomass_core") ||
       moduleVersion("Biomass_core", paths$modulePath) < "1.3.5") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
     ## check that SpaDES.install is available in the right version
@@ -240,7 +241,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, know
       .useParallel = 1,
       .useCache = NULL,
       calcSummaryBGM = NULL,
-      initialB = P(sim)$initialB,
+      initialB = initialB,
       initialBiomassSource = "cohortData",
       seedingAlgorithm = "noSeeding",
       sppEquivCol = "B_factorial",
