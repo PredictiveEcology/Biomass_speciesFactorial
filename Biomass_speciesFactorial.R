@@ -235,6 +235,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
       .useParallel = 1,
       .useCache = NULL,
       calcSummaryBGM = NULL,
+      initialB = P(sim)$initialB,
       initialBiomassSource = "cohortData",
       seedingAlgorithm = "noSeeding",
       sppEquivCol = "B_factorial",
