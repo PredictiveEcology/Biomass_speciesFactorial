@@ -12,7 +12,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
-  reqdPkgs = list("crayon", "ggplot2", "raster", "viridis",
+  reqdPkgs = list("crayon", "ggplot2", "raster", "viridis", "data.table",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
                   "PredictiveEcology/SpaDES.install (>= 0.0.5.9013)"),
   parameters = rbind(
