@@ -105,10 +105,15 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
     runExperiment = {
-      Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+      Cache(RunExperiment,
+            speciesTableFactorial = sim$speciesTableFactorial,
+            paths = mod$paths,
             times = mod$times,
-            maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
-            knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+            maxBInFactorial = P(sim)$maxBInFactorial,
+            factorialOutputs = sim$factorialOutputs,
+            initialB = P(sim)$initialB,
+            knownDigest = mod$dig,
+            omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
     },
     readExperimentFiles = {
       sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
@@ -170,7 +175,7 @@ factorialOutputs <- function(times, paths) {
   outputs(ss)
 }
 
-RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, factorialOutputs, paths, times) {
+RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, knownDigest, factorialOutputs, paths, times) {
   speciesEcoregion <- Cache(factorialSpeciesEcoregion,
                             speciesTableFactorial,
                             maxBInFactorial = maxBInFactorial,
@@ -179,7 +184,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   cohortData <- Cache(factorialCohortData,
                       speciesTableFactorial,
                       speciesEcoregion,
-                      initialB = P(sim)$initialB,
+                      initialB = initialB,
                       .cacheExtra = knownDigest,
                       omitArgs = c("speciesTable", "speciesEcoregion"))
 
