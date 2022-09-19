@@ -208,8 +208,6 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, know
   names(sppColors) <-  speciesTableFactorial$species
 
   ## TODO: make the following into a function to use across modules (e.g. B_borealDataPrep)
-  paths <- paths(sim)
-  curModPath <- file.path(paths$modulePath, currentModule(sim))
   submodule <- "Biomass_coreSubModule"
   paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
@@ -223,7 +221,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, know
                  "Require('PredictiveEcology/SpaDES.project (>= 0.0.7)', require = FALSE)"))
     }
 
-    paths$modulePath <- file.path(curModPath, submodule, "module")
+    paths$modulePath <- file.path(paths$modulePath, submodule, "module")
     moduleNameAndBranch <- c("Biomass_core@development (>= 1.3.9)")
     modules <- list(gsub("@.+", "", moduleNameAndBranch))
     SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
