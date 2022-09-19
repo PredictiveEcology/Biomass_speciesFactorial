@@ -221,7 +221,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, know
 
     paths$modulePath <- file.path(paths$modulePath, submodule, "module")
     moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
-    modules <- list(gsub("@.+", "", moduleNameAndBranch))
+    modules <- "Biomass_core"
     SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
     ## trim unnecessary modules and change path
