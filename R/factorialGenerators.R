@@ -6,28 +6,28 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
                                   mANPPproportion = seq(3.5, 6, 0.25),
                                   ...,
                                   cohortsPerPixel = 1:2) {
-  
+
   if (FALSE) { # These are the original ones
     growthcurves <- seq(0, 1, 0.1)
     mortalityshapes <- seq(5, 25, 1)
     longevity <- seq(150, 700, 25)
     mANPPproportion <- seq(0.25,10, 0.25)
   }
-  
+
   forms <- formals()
   formNames <- setdiff(names(forms), c("...", "cohortsPerPixel"))
   params <- append(forms[formNames], list(...))
   defaultAttributes <- lapply(params, eval)
   Attributes <- modifyList2(defaultAttributes, append(mget(formNames), list(...)))
-  
+
   Atts <- names(Attributes)
-  
+
   if (any(cohortsPerPixel %in% 1)) {
     species1 <- expand.grid(Attributes)
     species1 <- as.data.table(species1)
     setnames(species1, new = Atts)
   }
-  
+
   if (any(cohortsPerPixel %in% 2)) {
     Attributes1 <- paste0(Atts, "1")
     Attributes2 <- paste0(Atts, "2")
@@ -36,22 +36,22 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
     species2 <- as.data.table(species2)
     colnames2sp <- c(Attributes1, Attributes2)
     setnames(species2, new = colnames2sp)
-    
+
     # Take top right of matrix
     Map(A1 = Attributes1, A2 = Attributes2, function(A1, A2) {
       species2 <<- species2[species2[[A1]] >= species2[[A2]]]
     })
   }
-  
+
   prevMaxPG <- 0
   if (any(cohortsPerPixel %in% 1)) {
     set(species1, NULL, "pixelGroup", seq(NROW(species1)))
     set(species1, NULL, "species", paste0("A", species1$pixelGroup))
     prevMaxPG <- max(species1$pixelGroup)
   }
-  
+
   if (any(cohortsPerPixel %in% 2)) {
-    
+
     set(species2, NULL, "pixelGroup", seq(NROW(species2)))
     set(species2, NULL, "species", paste0("B", species2$pixelGroup))
     species2b <- melt(species2, id.vars = c("species", "pixelGroup"))
@@ -66,7 +66,7 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
     setnames(species2b, old = "speciesCode", new = "species")
     set(species2b, NULL, "pixelGroup", species2b$pixelGroup + prevMaxPG)
   }
-  
+
   speciesOut <- data.table()
   if (any(cohortsPerPixel %in% 1)) {
     speciesOut <- species1
@@ -74,7 +74,7 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
   if (any(cohortsPerPixel %in% 2)) {
     speciesOut <- rbindlist(list(speciesOut, species2b), use.names = TRUE)
   }
-  
+
   set(speciesOut, NULL, "mortalityshape", asInteger(speciesOut$mortalityshape))
   set(speciesOut, NULL, "longevity", asInteger(speciesOut$longevity))
   speciesOut[,.(species, longevity, growthcurve, mortalityshape, mANPPproportion, pixelGroup)]
@@ -84,30 +84,38 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
 #' Will create a cohortData table from a `speciesTable`, and combine it with another
 #' `cohortData` table (e.g., from singles)
 #' Must have `species` and `pixelGroup`
-factorialCohortData <- function(speciesTable, speciesEcoregion) {
+factorialCohortData <- function(speciesTable, speciesEcoregion, initialB) {
   if (!identical(speciesTable$species, as.character(speciesEcoregion$speciesCode)))
     stop("speciesTable and speciesEcoregion must have identical species and as.character(speciesCode)")
   cohortData2 <- speciesTable[, c("species", "pixelGroup")]#, "maxANPP")]
   set(cohortData2, NULL, "speciesCode", as.factor(cohortData2$species))
   set(cohortData2, NULL, "species", NULL)
-  
+
   set(cohortData2, NULL, "age", 1L)
-  
+
   set(cohortData2, NULL, "ecoregionGroup", factor(1))
-  # set(cohortData2, NULL, "B", speciesEcoregion$maxANPP) # Default LANDIS
-  set(cohortData2, NULL, "B", 1L)
+
+  if (isTRUE(is.na(initialB)) || is.null(initialB)) {
+    cohortData2 <- cohortData2[speciesEcoregion[, .(speciesCode, ecoregionGroup, maxANPP)],
+                               on = .(speciesCode, ecoregionGroup)]
+    set(cohortData2, NULL, "B", cohortData2$maxANPP) # Default LANDIS
+    set(cohortData2, NULL, "maxANPP", NULL)
+  } else {
+    set(cohortData2, NULL, "B", asInteger(initialB))
+  }
+
   setcolorder(cohortData2, c('speciesCode', 'pixelGroup', 'ecoregionGroup', 'age', "B"))
 }
 
 
 factorialSpeciesEcoregion <- function(speciesTable, maxBInFactorial) {
   speciesEcoregion <- speciesTable[, c("species", "mANPPproportion")]
-  
+
   set(speciesEcoregion, NULL, "maxB", maxBInFactorial)
   set(speciesEcoregion, NULL, "maxANPP", speciesEcoregion$maxB * speciesEcoregion$mANPPproportion/100)
   speciesEcoregion[, c("ecoregionGroup", "establishprob", "year") := .(factor(1), 0.5, 0)]
   setnames(speciesEcoregion, old = "species", new = "speciesCode")
-  
+
   # Change classes
   set(speciesEcoregion, NULL, "speciesCode", as.factor(speciesEcoregion$speciesCode))
   set(speciesEcoregion, NULL, "mANPPproportion", NULL)

@@ -7,16 +7,35 @@ defineModule(sim, list(
     person("Eliot", "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = "aut")
   ),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.12"),
+  version = list(Biomass_speciesFactorial = "0.0.13"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
-  reqdPkgs = list("crayon", "ggplot2", "raster", "viridis",
+  reqdPkgs = list("crayon", "ggplot2", "raster", "viridis", "data.table",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
                   "PredictiveEcology/SpaDES.install (>= 0.0.5.9013)"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
+    defineParameter("initialB", "numeric", 10, 1, NA,
+                    desc = paste("initial biomass values of new age-1 cohorts.",
+                                 "If `NA` or `NULL`, initial biomass will be calculated as in LANDIS-II Biomass Suc. Extension",
+                                 "(see Scheller and Miranda, 2015 or `?LandR::.initiateNewCohorts`)")),
+    defineParameter("factorialSize", "character", "small", "medium", "large",
+                    paste("If user does not supply an explicit `argsForFactorial`, then they can",
+                          "specify either 'small', 'medium' or 'large' to take default ones that",
+                          "have different numbers of factorial combinations.",
+                          "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
+    defineParameter("maxBInFactorial", "integer", 5000L, NA, NA,
+                    "The arbitrary maximum biomass for the factorial simulations. This ",
+                    "is a per-species maximum within a pixel"),
+    defineParameter("readExperimentFiles", "logical", TRUE, NA, NA,
+                    paste("Reads all the cohortData files that were saved to disk during the",
+                          "experiment. Note that this can be run even if `runExperiment = FALSE`.")),
+    defineParameter("runExperiment", "logical", TRUE, NA, NA,
+                    paste("A logical indicating whether to run the experiment (may take time).",
+                          "See `readExperimentFiles`, which may be useful if the `cohortData` files",
+                          "have already been saved and all that is needed is reading them in.")),
     defineParameter(".plots", "character", "screen", NA, NA,
                     "Used by Plots function, which can be optionally used here"),
     defineParameter(".plotInitialTime", "numeric", start(sim), NA, NA,
@@ -31,27 +50,12 @@ defineModule(sim, list(
     defineParameter(".seed", "list", list(), NA, NA,
                     "Named list of seeds to use for each event (names)."),
     defineParameter(".useCache", "character", NA_character_, NA, NA,
-                    "Should caching of events or module be used?"),
-    defineParameter("factorialSize", "character", "small", "medium", "large",
-                    paste("If user does not supply an explicit argsForFactoria, then they can",
-                          "specify either 'small', 'medium' or 'large' to take default ones that",
-                          "have different numbers of factorial combinations.",
-                          "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
-    defineParameter("maxBInFactorial", "integer", 5000L, NA, NA,
-                    "The arbitrary maximum biomass for the factorial simulations. This ",
-                    "is a per-species maximum within a pixel"),
-    defineParameter("readExperimentFiles", "logical", TRUE, NA, NA,
-                    paste("Reads all the cohortData files that were saved to disk during the",
-                          "experiment. Note that this can be run even if `runExperiment = FALSE`.")),
-    defineParameter("runExperiment", "logical", TRUE, NA, NA,
-                    paste("A logical indicating whether to run the experiment (may take time).",
-                          "See `readExperimentFiles`, which may be useful if the `cohortData` files",
-                          "have already been saved and all that is needed is reading them in."))
+                    "Should caching of events or module be used?")
   ),
   inputObjects = bindrows(
     expectsInput(objectName = "argsForFactorial", objectClass = "list",
                  desc = paste(
-                   "A named list of parameters in the species Table, with the range of values",
+                   "A named list of parameters in the `speciesTable`, with the range of values",
                    "they each should take. Internally, this module will run `expand.grid` on these,",
                    "then will take the 'upper triangle' of the array, including the diagonal."
                  ),
@@ -101,10 +105,16 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
     runExperiment = {
-      Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+      Cache(RunExperiment,
+            speciesTableFactorial = sim$speciesTableFactorial,
+            paths = mod$paths,
             times = mod$times,
-            maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
-            knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+            modules = modules(sim),
+            maxBInFactorial = P(sim)$maxBInFactorial,
+            factorialOutputs = sim$factorialOutputs,
+            initialB = P(sim)$initialB,
+            knownDigest = mod$dig,
+            omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
     },
     readExperimentFiles = {
       sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
@@ -151,6 +161,7 @@ Init <- function(sim) {
                         .cacheExtra = mod$dig, omitArgs = "speciesTable")
   sim$speciesTableFactorial <- speciesTable
 
+  SpaDES.core::paramCheckOtherMods(sim, "initialB", ifSetButDifferent = "warning")
   return(invisible(sim))
 }
 
@@ -165,7 +176,8 @@ factorialOutputs <- function(times, paths) {
   outputs(ss)
 }
 
-RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, factorialOutputs, paths, times) {
+RunExperiment <- function(speciesTableFactorial, maxBInFactorial, initialB, knownDigest,
+                          factorialOutputs, paths, times, modules) {
   speciesEcoregion <- Cache(factorialSpeciesEcoregion,
                             speciesTableFactorial,
                             maxBInFactorial = maxBInFactorial,
@@ -174,6 +186,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   cohortData <- Cache(factorialCohortData,
                       speciesTableFactorial,
                       speciesEcoregion,
+                      initialB = initialB,
                       .cacheExtra = knownDigest,
                       omitArgs = c("speciesTable", "speciesEcoregion"))
 
@@ -194,9 +207,27 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
   names(sppColors) <-  speciesTableFactorial$species
 
-  moduleNameAndBranch <- c("Biomass_core@development (>= 1.3.9)")
-  modules <- gsub("@.+", "", moduleNameAndBranch)
-  getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+  ## TODO: make the following into a function to use across modules (e.g. B_borealDataPrep)
+  submodule <- "Biomass_coreSubModule"
+
+  if (!any(modules == "Biomass_core") ||
+      moduleVersion("Biomass_core", paths$modulePath) < "1.3.5") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
+    ## check that SpaDES.install is available in the right version
+    if (!Require::Require("PredictiveEcology/SpaDES.project (>= 0.0.7)",
+                          upgrade = FALSE, install = FALSE)) {
+      stop(paste("Please install SpaDES.project v0.0.7 or above using:",
+                 "Require('PredictiveEcology/SpaDES.project (>= 0.0.7)', require = FALSE)"))
+    }
+
+    paths$modulePath <- file.path(paths$modulePath, submodule, "module")
+    moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
+    modules <- "Biomass_core"
+    SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+  } else {
+    ## trim unnecessary modules and change path
+    paths$modulePath <- mod$pathsOrig$modulePath
+    modules <- modules[modules == "Biomass_core"]
+  }
 
   parameters <- list(
     Biomass_core = list(
@@ -207,6 +238,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
       .useParallel = 1,
       .useCache = NULL,
       calcSummaryBGM = NULL,
+      initialB = initialB,
       initialBiomassSource = "cohortData",
       seedingAlgorithm = "noSeeding",
       sppEquivCol = "B_factorial",
