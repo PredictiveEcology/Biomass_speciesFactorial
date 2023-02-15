@@ -195,7 +195,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   names(sppColors) <-  speciesTableFactorial$species
 
   moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
-  modules <- gsub("@.+", "", moduleNameAndBranch)
+  modules <- Require::extractPkgName(moduleNameAndBranch)
   getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
 
   parameters <- list(
