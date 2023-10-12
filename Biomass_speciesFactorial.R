@@ -14,7 +14,7 @@ defineModule(sim, list(
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
   reqdPkgs = list("crayon", "ggplot2", "raster", "viridis",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
-                  "PredictiveEcology/SpaDES.project@transition"), ## TODO: update once merged
+                  "PredictiveEcology/SpaDES.project (>= 0.0.7.9013)"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plots", "character", "screen", NA, NA,
