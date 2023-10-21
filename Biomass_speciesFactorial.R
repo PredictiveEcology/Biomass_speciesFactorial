@@ -102,7 +102,7 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
     },
     runExperiment = {
       Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
-            times = mod$times,
+            times = mod$times, modules = modules(sim),
             maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
             knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
     },
@@ -165,7 +165,8 @@ factorialOutputs <- function(times, paths) {
   outputs(ss)
 }
 
-RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, factorialOutputs, paths, times) {
+RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, factorialOutputs,
+                          paths, times, modules) {
   speciesEcoregion <- Cache(factorialSpeciesEcoregion,
                             speciesTableFactorial,
                             maxBInFactorial = maxBInFactorial,
@@ -195,9 +196,15 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
   names(sppColors) <-  speciesTableFactorial$species
 
-  moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
-  modules <- Require::extractPkgName(moduleNameAndBranch)
-  getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+
+  if (!"Biomass_core" %in% unlist(modules)) {
+    moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
+    modules <- Require::extractPkgName(moduleNameAndBranch)
+    getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+  } else {
+    paths$modulePath <- mod$pathsOrig$modulePath
+    modules <- "Biomass_core"
+  }
 
   parameters <- list(
     Biomass_core = list(
