@@ -95,22 +95,30 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
     init = {
       sim <- Init(sim)
       if (isTRUE(P(sim)$runExperiment))
-        sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "runExperiment", eventPriority = -1) # make it happen right away
+        Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+              times = mod$times, modules = modules(sim),
+              maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
+              knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+
+      #  sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "runExperiment", eventPriority = -1) # make it happen right away
+      browser()
       if (isTRUE(P(sim)$readExperimentFiles))
-        sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "readExperimentFiles", eventPriority = -1) # make it happen right away
+        sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
+                                         .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
+        # sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "readExperimentFiles", eventPriority = -1) # make it happen right away
       sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Biomass_speciesFactorial", "plot", eventPriority = -1) # make it happen right away
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
-    runExperiment = {
-      Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
-            times = mod$times, modules = modules(sim),
-            maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
-            knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
-    },
-    readExperimentFiles = {
-      sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
-                                       .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
-    },
+    # runExperiment = {
+    #   Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+    #         times = mod$times, modules = modules(sim),
+    #         maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
+    #         knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+    # },
+    # readExperimentFiles = {
+    #   sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
+    #                                    .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
+    # },
     plot = {
       plotFun(sim) # example of a plotting function
     },
