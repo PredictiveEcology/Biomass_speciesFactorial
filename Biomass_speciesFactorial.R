@@ -101,7 +101,6 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
               knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
 
       #  sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "runExperiment", eventPriority = -1) # make it happen right away
-      browser()
       if (isTRUE(P(sim)$readExperimentFiles))
         sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
                                          .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
