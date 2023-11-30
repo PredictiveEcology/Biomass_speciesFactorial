@@ -308,10 +308,12 @@ plotFun <- function(sim) {
                              sim$speciesTableFactorial,
                              .cacheExtra = mod$dig,
                              omitArgs = c("cds", "speciesTableFactorial"))
-  # Filename on Windows can't have colon ":"
+
+  ## Filename on Windows can't have colon ":"
   Plots(cohortDataForPlot, usePlot = FALSE,
         fn = ggplotFactorial, filename = paste0("cohortFactorial_", gsub(":", "_", Sys.time())),
-        ggsaveArgs = list( width = 12, height = 7))
+        ggsaveArgs = list( width = 12, height = 7)) ## TODO: saving ggplot object using qs is SLOW -- massive file
+
   return(invisible(sim))
 }
 
@@ -332,7 +334,8 @@ subsampleForPlot <- function(cds, speciesTableFactorial) {
 
   ff[, Title := paste0(maxDiffB, "_", pixelGroup)]
   ff[,
-     params := paste0(unique(Sp),"(l=",unique(longevity),";g=",unique(growthcurve), ";m=",unique(mortalityshape),";p=", unique(mANPPproportion ),")"),
+     params := paste0(unique(Sp), "(l=", unique(longevity), ";g=", unique(growthcurve),
+                      ";m=", unique(mortalityshape), ";p=", unique(mANPPproportion ), ")"),
      by = c("Sp", "pixelGroup")]
   ff[, Title := paste0(unique(params), collapse = "\n"), by = "pixelGroup"]
   ff
