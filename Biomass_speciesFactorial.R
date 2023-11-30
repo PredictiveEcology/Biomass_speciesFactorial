@@ -133,7 +133,6 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
 Init <- function(sim) {
-
   # The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
   #   if desired. We will still have the list of files that would be created.
   endTime <- max(sim$argsForFactorial$longevity)
@@ -141,13 +140,13 @@ Init <- function(sim) {
 
   message("Setting up factorial combinations of species traits, and associated initial cohortData table")
   mod$dig <- CacheDigest(sim$argsForFactorial)$outputHash
-  mod$pathsOrig <- getPaths()
+  mod$pathsOrig <- paths(sim) ## TODO: confirm this
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
   })
   mod$paths <- mod$pathsOrig
   mod$paths$outputPath <- file.path(dataPath(sim), paste0("factorial_", mod$dig))
-  mod$paths$modulePath <- file.path(dataPath(sim), "module")
+  mod$paths$modulePath <- file.path(modulePath(sim), currentModule(sim), "submodules")
   # mod$paths$outputPath <- dataPath(sim)
 
   sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
@@ -198,7 +197,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
 
   ## Simple Tables
   minRelativeB <- data.table("ecoregionGroup" = factor(1), minRelativeBDefaults())
-  ecoregion <- data.table("ecoregionGroup" = as.factor(1), 'active' = 'yes')
+  ecoregion <- data.table("ecoregionGroup" = as.factor(1), "active" = "yes")
 
   ## Make sppColors
   sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
