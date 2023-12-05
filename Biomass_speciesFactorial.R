@@ -12,8 +12,10 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
-  reqdPkgs = list("crayon", "ggplot2", "viridis", "terra",
+  reqdPkgs = list("crayon", "ggplot2", "terra", "viridis",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
+                  "PredictiveEcology/Require@development (>= 0.3.1)",
+                  "PredictiveEcology/reproducible@development (>= 2.0.8)",
                   "PredictiveEcology/SpaDES.core@optionsAsArgs (>= 2.0.2.9010)",
                   "PredictiveEcology/SpaDES.project (>= 0.0.7.9013)"),
   parameters = rbind(
@@ -187,7 +189,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
 
   ## Maps
   pixelGroupMap <- factorialPixelGroupMap(cohortData)
-  studyArea <- as.polygons(terra::ext(pixelGroupMap), crs="")
+  studyArea <- as.polygons(terra::ext(pixelGroupMap), crs = "")
   # studyArea <- as(extent(pixelGroupMap), 'SpatialPolygons')
   crs(studyArea) <- crs(pixelGroupMap)
   rasterToMatch <- pixelGroupMap
