@@ -97,7 +97,8 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
     init = {
       sim <- Init(sim)
       if (isTRUE(P(sim)$runExperiment))
-        Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+        Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial,
+              paths = mod$paths, pathsOrig = mod$pathsOrig,
               times = mod$times, modules = modules(sim),
               maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
               knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
@@ -111,7 +112,8 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
     # runExperiment = {
-    #   Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial, paths = mod$paths,
+    #   Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial,
+    #         paths = mod$paths, pathsOrig = mod$pathsOrig,
     #         times = mod$times, modules = modules(sim),
     #         maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
     #         knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
@@ -175,7 +177,7 @@ factorialOutputs <- function(times, paths) {
 }
 
 RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, factorialOutputs,
-                          paths, times, modules) {
+                          paths, pathsOrig, times, modules) {
   speciesEcoregion <- Cache(factorialSpeciesEcoregion,
                             speciesTableFactorial,
                             maxBInFactorial = maxBInFactorial,
@@ -205,13 +207,13 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
   names(sppColors) <-  speciesTableFactorial$species
 
-
-  if (!"Biomass_core" %in% unlist(modules)) {
+  modulesInProject <- c(unlist(modules), list.dirs(pathsOrig$modulePath, full.names = FALSE, recursive = FALSE))
+  if (!any("Biomass_core" %in% modulesInProject)) {
     moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
     modules <- Require::extractPkgName(moduleNameAndBranch)
     getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
-    paths$modulePath <- mod$pathsOrig$modulePath
+    paths$modulePath <- pathsOrig$modulePath
     modules <- "Biomass_core"
   }
 
