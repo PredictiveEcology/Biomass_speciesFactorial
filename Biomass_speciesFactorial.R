@@ -232,8 +232,6 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
     )
   )
 
-  # Get modules
-  #Tree species that are important to us
   speciesLayers <- "species"
 
   ## 2022-06-30 AMC: cannot pass an empty data.table or Biomass_core tries to guess with
