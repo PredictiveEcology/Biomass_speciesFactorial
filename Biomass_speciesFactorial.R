@@ -207,8 +207,12 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
   sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
   names(sppColors) <-  speciesTableFactorial$species
 
-  modulesInProject <- c(unlist(modules), list.dirs(pathsOrig$modulePath, full.names = FALSE, recursive = FALSE))
-  if (!any("Biomass_core" %in% modulesInProject)) {
+  modulesInProject <- list.dirs(pathsOrig$modulePath, full.names = TRUE, recursive = FALSE) |> as.list()
+  names(modulesInProject) <- modulesInProject
+  modulesInProject <- lapply(modulesInProject, basename)
+  modules <- modifyList(modules, modulesInProject)
+
+  if (!any("Biomass_core" %in% modules)) {
     moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
     modules <- Require::extractPkgName(moduleNameAndBranch)
     getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
