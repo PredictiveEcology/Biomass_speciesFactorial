@@ -149,9 +149,9 @@ Init <- function(sim) {
     suppressMessages(do.call(setPaths, mod$pathsOrig))
   })
   mod$paths <- mod$pathsOrig
-  mod$paths$outputPath <- file.path(dataPath(sim), paste0("factorial_", mod$dig))
+  mod$paths$outputPath <- file.path(inputPath(sim), paste0("factorial_", mod$dig))
   mod$paths$modulePath <- file.path(modulePath(sim), currentModule(sim), "submodules")
-  # mod$paths$outputPath <- dataPath(sim)
+  # mod$paths$outputPath <- inputPath(sim)
 
   sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
                                 paths = mod$paths, .cacheExtra = mod$dig)
@@ -360,7 +360,7 @@ ggplotFactorial <- function(ff) {
 }
 
 .inputObjects <- function(sim) {
-  dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
+  dPath <- asPath(inputPath(sim), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   if (!suppliedElsewhere("argsForFactorial")) {
