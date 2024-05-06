@@ -96,18 +96,20 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
     eventType,
     init = {
       sim <- Init(sim)
-      if (isTRUE(P(sim)$runExperiment))
+      if (isTRUE(P(sim)$runExperiment)) {
         Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial,
               paths = mod$paths, pathsOrig = mod$pathsOrig,
               times = mod$times, modules = modules(sim),
               maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
               knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+      }
 
       #  sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "runExperiment", eventPriority = -1) # make it happen right away
-      if (isTRUE(P(sim)$readExperimentFiles))
+      if (isTRUE(P(sim)$readExperimentFiles)) {
         sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
                                          .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
         # sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "readExperimentFiles", eventPriority = -1) # make it happen right away
+      }
       sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Biomass_speciesFactorial", "plot", eventPriority = -1) # make it happen right away
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
@@ -287,7 +289,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
                     .cacheExtra = list(knownDigest, paths$outputPath),
                     omitArgs = c("objects", "params", "debug", "paths"))
 
-  return(invisible())
+  return(invisible(NULL))
 }
 
 ReadExperimentFiles <- function(factorialOutputs) {
