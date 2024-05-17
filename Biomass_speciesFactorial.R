@@ -52,7 +52,7 @@ defineModule(sim, list(
                           "have already been saved and all that is needed is reading them in."))
   ),
   inputObjects = bindrows(
-    expectsInput(objectName = "argsForFactorial", objectClass = "list",
+    expectsInput("argsForFactorial", "list",
                  desc = paste(
                    "A named list of parameters in the species Table, with the range of values",
                    "they each should take. Internally, this module will run `expand.grid` on these,",
@@ -61,7 +61,7 @@ defineModule(sim, list(
                  sourceURL = NA)
   ),
   outputObjects = bindrows(
-    createsOutput(objectName = "cohortDataFactorial", objectClass = "data.table",
+    createsOutput("cohortDataFactorial", "data.table",
                   desc = paste(
                     "A large `cohortData` table (*sensu* `Biomass_core`) columns necessary for",
                     "running `Biomass_core`, e.g., `longevity`, `growthcurve`, `mortalityshape`, etc..",
@@ -70,13 +70,13 @@ defineModule(sim, list(
                     "Currently, these are set to defaults internally."
                   )
     ),
-    createsOutput(objectName = "factorialOutputs", objectClass = "data.table",
+    createsOutput("factorialOutputs", "data.table",
                   desc = paste(
                     "A data.table of the `outputs(sim)` that is used during the factorial.",
                     "This will give the file names of all the `cohortData` files that were produced."
                   )
     ),
-    createsOutput(objectName = "speciesTableFactorial", objectClass = "data.table",
+    createsOutput("speciesTableFactorial", "data.table",
                   desc = paste(
                     "A large species table (*sensu* `Biomass_core`) with all columns necessary for",
                     "running `Biomass_core`, e.g., `longevity`, `growthcurve`, `mortalityshape`, etc..",
