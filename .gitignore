@@ -41,3 +41,5 @@ vignettes/*.pdf
 ## nested modules
 submodules/
 
+
+Biomass_speciesFactorial2.Rmd
