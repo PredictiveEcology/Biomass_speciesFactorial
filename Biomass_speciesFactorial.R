@@ -236,7 +236,8 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
       seedingAlgorithm = "noSeeding",
       sppEquivCol = "B_factorial",
       successionTimestep = 10,
-      vegLeadingProportion = 0
+      vegLeadingProportion = 0,
+      minCohortBiomass = 1
     )
   )
 
