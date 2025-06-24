@@ -142,7 +142,7 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
 
 Init <- function(sim) {
 
-  if (!is.na(P(sim)$intitialB)) {
+  if (!is.na(P(sim)$initialB)) {
     if (P(sim)$initialB <= P(sim)$minCohortBiomass) {
       stop("P(sim)$initialB must be greater than P(sim)$minCohortBiomass ",
            "or all cohorts will be removed during factorial simulation")
