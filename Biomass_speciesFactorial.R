@@ -7,12 +7,12 @@ defineModule(sim, list(
     person("Eliot", "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = "aut")
   ),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.12"),
+  version = list(Biomass_speciesFactorial = "0.0.13"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
-  reqdPkgs = list("crayon", "ggplot2", "terra", "viridis",
+  reqdPkgs = list("crayon", "data.table", "ggplot2", "terra", "viridis",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
                   "PredictiveEcology/Require@development (>= 0.3.1)",
                   "PredictiveEcology/reproducible@development (>= 2.0.8)",
