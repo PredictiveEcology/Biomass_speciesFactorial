@@ -142,9 +142,11 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
 
 Init <- function(sim) {
 
-  if (P(sim)$initialB <= P(sim)$minCohortBiomass) {
-    stop("P(sim)$initialB must be greater than P(sim)$minCohortBiomass ",
-         "or all cohorts will be removed during factorial simulation")
+  if (!is.na(P(sim)$intitialB)) {
+    if (P(sim)$initialB <= P(sim)$minCohortBiomass) {
+      stop("P(sim)$initialB must be greater than P(sim)$minCohortBiomass ",
+           "or all cohorts will be removed during factorial simulation")
+    }
   }
 
   # The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
