@@ -84,7 +84,7 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
 #' Will create a cohortData table from a `speciesTable`, and combine it with another
 #' `cohortData` table (e.g., from singles)
 #' Must have `species` and `pixelGroup`
-factorialCohortData <- function(speciesTable, speciesEcoregion) {
+factorialCohortData <- function(speciesTable, speciesEcoregion, initialB) {
   if (!identical(speciesTable$species, as.character(speciesEcoregion$speciesCode)))
     stop("speciesTable and speciesEcoregion must have identical species and as.character(speciesCode)")
   cohortData2 <- speciesTable[, c("species", "pixelGroup")]#, "maxANPP")]
@@ -95,7 +95,7 @@ factorialCohortData <- function(speciesTable, speciesEcoregion) {
 
   set(cohortData2, NULL, "ecoregionGroup", factor(1))
   # set(cohortData2, NULL, "B", speciesEcoregion$maxANPP) # Default LANDIS
-  set(cohortData2, NULL, "B", 1L)
+  set(cohortData2, NULL, "B", initialB)
   setcolorder(cohortData2, c('speciesCode', 'pixelGroup', 'ecoregionGroup', 'age', "B"))
 }
 

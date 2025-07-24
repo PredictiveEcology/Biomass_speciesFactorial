@@ -7,17 +7,17 @@ defineModule(sim, list(
     person("Eliot", "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = "aut")
   ),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.12"),
+  version = list(Biomass_speciesFactorial = "0.0.13"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
-  reqdPkgs = list("crayon", "ggplot2", "terra", "viridis",
+  reqdPkgs = list("crayon", "data.table", "ggplot2", "terra", "viridis",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
                   "PredictiveEcology/Require@development (>= 0.3.1)",
                   "PredictiveEcology/reproducible@development (>= 2.0.8)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9010)",
-                  "PredictiveEcology/SpaDES.project (>= 0.0.7.9013)"),
+                  "PredictiveEcology/SpaDES.project@development (>= 0.0.7.9013)"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plots", "character", "screen", NA, NA,
@@ -35,14 +35,21 @@ defineModule(sim, list(
                     "Named list of seeds to use for each event (names)."),
     defineParameter(".useCache", "character", NA_character_, NA, NA,
                     "Should caching of events or module be used?"),
-    defineParameter("factorialSize", "character", "small", "medium", "large",
+    defineParameter("factorialSize", "character", "medium", "small", "large",
                     paste("If user does not supply an explicit `argsForFactorial`, then they can",
                           "specify either 'small', 'medium' or 'large' to take default ones that",
                           "have different numbers of factorial combinations.",
                           "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
+    defineParameter("initialB", "numeric", 10, 1, NA,
+                    paste("initial cohort biomass at age = 1. If NA, will use `maxBInFactorial`/30",
+                          "akin to the LANDIS-II Biomass Succession default. Must be greater than
+                          `P(sim)$minCohortBiomass")),
     defineParameter("maxBInFactorial", "integer", 5000L, NA, NA,
                     paste("The arbitrary maximum biomass for the factorial simulations.",
                           "This is a per-species maximum within a pixel.")),
+    defineParameter("minCohortBiomass", "numeric", 9, NA, NA,
+                    paste("The smallest amount of biomass before a cohort is removed from a simulation.",
+                    "Barring removal via this parameter, cohorts can persist with B = 1 until age = longevity.")),
     defineParameter("readExperimentFiles", "logical", TRUE, NA, NA,
                     paste("Reads all the `cohortData` files that were saved to disk during the experiment.",
                           "Note that this can be run even if `runExperiment = FALSE`.")),
@@ -95,35 +102,30 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
   switch(
     eventType,
     init = {
+
       sim <- Init(sim)
       if (isTRUE(P(sim)$runExperiment)) {
         Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial,
               paths = mod$paths, pathsOrig = mod$pathsOrig,
               times = mod$times, modules = modules(sim),
-              maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
-              knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+              minCohortB = P(sim)$minCohortB, initialB = P(sim)$initialB,
+              maxBInFactorial = P(sim)$maxBInFactorial,
+              factorialOutputs = sim$factorialOutputs,
+              knownDigest = mod$dig,
+              omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
       }
 
       #  sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "runExperiment", eventPriority = -1) # make it happen right away
       if (isTRUE(P(sim)$readExperimentFiles)) {
         sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
                                          .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
+
         # sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "readExperimentFiles", eventPriority = -1) # make it happen right away
       }
       sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Biomass_speciesFactorial", "plot", eventPriority = -1) # make it happen right away
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
     },
-    # runExperiment = {
-    #   Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial,
-    #         paths = mod$paths, pathsOrig = mod$pathsOrig,
-    #         times = mod$times, modules = modules(sim),
-    #         maxBInFactorial = P(sim)$maxBInFactorial, factorialOutputs = sim$factorialOutputs,
-    #         knownDigest = mod$dig, omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
-    # },
-    # readExperimentFiles = {
-    #   sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
-    #                                    .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
-    # },
+
     plot = {
       plotFun(sim) # example of a plotting function
     },
@@ -139,6 +141,14 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
 Init <- function(sim) {
+
+  if (!is.na(P(sim)$initialB)) {
+    if (P(sim)$initialB <= P(sim)$minCohortBiomass) {
+      stop("P(sim)$initialB must be greater than P(sim)$minCohortBiomass ",
+           "or all cohorts will be removed during factorial simulation")
+    }
+  }
+
   # The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
   #   if desired. We will still have the list of files that would be created.
   endTime <- max(sim$argsForFactorial$longevity)
@@ -178,16 +188,23 @@ factorialOutputs <- function(times, paths) {
   outputs(ss)
 }
 
-RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, factorialOutputs,
-                          paths, pathsOrig, times, modules) {
+RunExperiment <- function(speciesTableFactorial, maxBInFactorial,
+                          knownDigest, factorialOutputs, minCohortB,
+                          initialB, paths, pathsOrig, times, modules) {
   speciesEcoregion <- Cache(factorialSpeciesEcoregion,
                             speciesTableFactorial,
                             maxBInFactorial = maxBInFactorial,
                             .cacheExtra = knownDigest,
                             omitArgs = c("speciesTable"))
+
+  if (is.na(initialB)) {
+    initialB <- as.integer(round(maxBInFactorial/30)) #LANDIS-II BSM default
+  }
+
   cohortData <- Cache(factorialCohortData,
                       speciesTableFactorial,
                       speciesEcoregion,
+                      initialB = initialB,
                       .cacheExtra = knownDigest,
                       omitArgs = c("speciesTable", "speciesEcoregion"))
 
@@ -237,7 +254,7 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial, knownDigest, f
       sppEquivCol = "B_factorial",
       successionTimestep = 10,
       vegLeadingProportion = 0,
-      minCohortBiomass = 1
+      minCohortBiomass = minCohortB
     )
   )
 
