@@ -17,7 +17,7 @@ defineModule(sim, list(
                   "PredictiveEcology/Require@development (>= 0.3.1)",
                   "PredictiveEcology/reproducible@development (>= 2.0.8)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9010)",
-                  "PredictiveEcology/SpaDES.project (>= 0.0.7.9013)"),
+                  "PredictiveEcology/SpaDES.project@development (>= 0.0.7.9013)"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plots", "character", "screen", NA, NA,
