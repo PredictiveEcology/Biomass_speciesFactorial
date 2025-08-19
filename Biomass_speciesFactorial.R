@@ -14,7 +14,7 @@ defineModule(sim, list(
   documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
   reqdPkgs = list("crayon", "data.table", "ggplot2", "terra", "viridis",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
-                  "PredictiveEcology/Require@development (>= 0.3.1)",
+                  "PredictiveEcology/Require@development (>= 1.0.1.9020)",
                   "PredictiveEcology/reproducible@development (>= 2.0.8)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9010)",
                   "PredictiveEcology/SpaDES.project@development (>= 0.0.7.9013)"),
