@@ -173,7 +173,7 @@ objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
 )
 
 simOut <- simInitAndSpades(
-  times = list(start = 0, end = 0), # params = parameters, 
+  times = list(start = 0, end = 0),
   modules = modules, 
   params = list(
     Biomass_speciesFactorial = list(.plots = NA, runExperiment = TRUE),
