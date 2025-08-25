@@ -1,43 +1,121 @@
 ---
-title: "Biomass_speciesFactorial"
-author: "emcintir"
-date: "02 December 2021"
+title: "Biomass_speciesFactorial Manual"
+subtitle: "v.`r SpaDES.core::moduleMetadata(module = 'Biomass_speciesFactorial', path = '..')$version`"
+date: "Last updated: `r Sys.Date()`"
 output:
-  html_document:
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: sandstone
+    number_sections: false
+    df_print: paged
     keep_md: yes
 editor_options:
   chunk_output_type: console
+bibliography: citations/references_Biomass_speciesFactorial.bib
+link-citations: true
+always_allow_html: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval = FALSE, results = "hold") ## TODO: use 'eval = TRUE'
+# Biomass_speciesFactorial Module
+
+<!-- the following are text references used in captions for LaTeX compatibility -->
+(ref:Biomass-speciesFactorial) *Biomass_speciesFactorial*
+
+
+```{r setup-Biomass-speciesFactorial, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE, results = "hold") ## change to eval = TRUE if all chunks are to be evaluated
+
+dir.create("figures", showWarnings = FALSE)
+
+download.file(
+  url = "https://img.shields.io/badge/Made%20with-Markdown-1f425f.png",
+  destfile = "figures/markdownBadge.png",
+  mode = "wb"
+)
 ```
 
-# Overview
+[![made-with-Markdown](figures/markdownBadge.png)](https://commonmark.org)
 
-Provide an overview of what the module does / how to use the module.
+<!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
 
-Module documentation should be written so that others can use your module.
-This is a template for module documentation, and should be changed to reflect your module.
+#### Authors:
 
-## R Markdown
+`r paste(as.character(SpaDES.core::moduleMetadata(module = "Biomass_speciesFactorial", path = '..')$authors), sep = ', ')`
+<!-- ideally separate authors with new lines, '\n' not working -->
 
-R Markdown syntax allows R code, outputs, and figures to be rendered in the documentation.
+## Module Overview
 
-For help writing in R Markdown, see https://rmarkdown.rstudio.com/.
+### Module summary
 
-# Usage
+Create and run a factorial simulation experiment for LANDIS-II-like species traits.
+
+### Module inputs and parameters
+
+Table \@ref(tab:moduleInputs-Biomass-speciesFactorial) shows the full list of module inputs.
+
+```{r moduleInputs-Biomass-speciesFactorial, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+df_inputs <- SpaDES.core::moduleInputs("Biomass_speciesFactorial", "..")
+knitr::kable(df_inputs,
+             caption = "List of (ref:Biomass-speciesFactorial) input objects and their description.") |>
+  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+```
+
+Summary of user-visible parameters (Table \@ref(tab:moduleParams-Biomass-speciesFactorial))
+
+
+```{r moduleParams-Biomass-speciesFactorial, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+df_params <- SpaDES.core::moduleParams("Biomass_speciesFactorial", "..")
+knitr::kable(df_params, caption = "List of (ref:Biomass-speciesFactorial) parameters and their description.") |>
+  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+```
+
+### Events
+
+<!-- TODO -->
+Describe what happens for each event type.
+
+### Plotting
+
+<!-- TODO -->
+Write what is plotted.
+
+### Saving
+
+<!-- TODO -->
+Write what is saved.
+
+### Module outputs
+
+Description of the module outputs (Table \@ref(tab:moduleOutputs-Biomass-speciesFactorial)).
+
+```{r moduleOutputs-Biomass-speciesFactorial, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
+df_outputs <- SpaDES.core::moduleOutputs("Biomass_speciesFactorial", "..")
+knitr::kable(df_outputs, caption = "List of (ref:Biomass-speciesFactorial) outputs and their description.") |>
+  kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
+```
+
+## Usage
+
+<!-- TODO: updates and testing needed -->
+
+:::{.rmdwarning}
+⚠️ this section is very out of date and is unlikely to work ⚠️
+:::
 
 ```{r module_usage}
-#This script is for running the species traits factorial design. 
-# it requires a version of Biomass_core that is gitIgnored. The versino had many changes to accomodate the 'no regeneration' scenario
-# Many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
+## This script is for running the species traits factorial design.
+## It requires a version of Biomass_core that is .gitignored:
+##  - the version had many changes to accommodate the 'no regeneration' scenario;
+## - many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
 options(reproducible.showSimilar = TRUE, 
         reproducible.useMemoise = FALSE, reproducible.cacheSaveFormat = "qs", spades.moduleCodeChecks = FALSE,
         reproducible.showSimilarDepth = 5, spades.recoveryMode = FALSE)
 
-# Packages
-if (!require("Require")) {install.packages("Require"); require("Require")}
+## Packages
+if (!require("Require")) {
+  install.packages("Require"); require("Require")
+}
 Require("PredictiveEcology/SpaDES.install", upgrade = FALSE)
 installSpaDES()
 Require(c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)",
@@ -99,9 +177,20 @@ simOut <- simInitAndSpades(
   objects = objects,
   debug = 1
 )
-
-
-
-
 ```
 
+
+### Links to other modules
+
+- <https://github.com/PredictiveEcology/Biomass_speciesData>;
+- <https://github.com/PredictiveEcology/Biomass_speciesParameterization>;
+- <https://github.com/PredictiveEcology/Biomass_borealDataPrep>;
+- <https://github.com/PredictiveEcology/Biomass_core>;
+
+### Getting help
+
+- <https://github.com/PredictiveEcology/Biomass_speciesFactorial/issues>
+
+## References
+
+<!-- autogenerated from bibligraphy -->
