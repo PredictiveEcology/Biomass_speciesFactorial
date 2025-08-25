@@ -47,6 +47,8 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
+      - uses: PredictiveEcology/actions/install-Rmd-pkgs@v0.2
+
       - uses: PredictiveEcology/actions/install-Require@v0.2
         with:
           GitTag: 'development'
@@ -55,10 +57,10 @@ jobs:
 
       - uses: PredictiveEcology/actions/install-Rmd-pkgs@v0.2
 
-      - name: Install module package and other dependencies
+      - name: Install module package dependencies
         run: |
           pkgs <- SpaDES.core::packages(modules = "Biomass_speciesFactorial", paths = "..")
-          Require::Require(pkgs[[1]], require = FALSE)
+          Require::Require(pkgs)
         shell: Rscript {0}
 
       - name: Render module Rmd
