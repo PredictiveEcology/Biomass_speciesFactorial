@@ -288,11 +288,11 @@ outputs <- data.frame(expand.grid(
   stringsAsFactors = FALSE
 ))
 
-## Slow and large
+## Slow and large :
+## -- longevity 600 would be too big, use 400;
 objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.02),
                                         mortalityshape = seq(20, 25, 1),
-                                        ## not longevity 600 -- too big
                                         longevity = seq(125, 400, 25),
                                         mANPPproportion = seq(3.5, 6, 0.25))
 )
