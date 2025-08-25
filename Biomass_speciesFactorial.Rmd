@@ -126,7 +126,7 @@ installSpaDES()
 Require(c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)",
           "reproducible"), upgrade = FALSE)
 
-# Modules
+## Modules
 setPaths(rasterPath = tempdir(),
          cachePath =  file.path(tempdir(), "Cache"),
          modulePath = file.path("modules"),
@@ -136,8 +136,7 @@ setPaths(rasterPath = tempdir(),
 moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks",
                          "Biomass_speciesFactorial@main")
 lapply(moduleNameAndBranch, function(modName) {
-  Cache(getModule, file.path("PredictiveEcology", modName), #modulePath = getPaths()$modulePath, 
-        overwrite = TRUE)
+  Cache(getModule, file.path("PredictiveEcology", modName), overwrite = TRUE)
 })
 modules <- gsub("@.+", "", moduleNameAndBranch)
 modules <- c("Biomass_speciesFactorial", modules)
@@ -149,7 +148,7 @@ outputs <- data.frame(expand.grid(
   stringsAsFactors = FALSE
 ))
 
-# Slow and large
+## Slow and large
 objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.02),
                                         mortalityshape = seq(20, 25, 1),
@@ -157,14 +156,14 @@ objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         mANPPproportion = seq(3.5, 6, 0.25))
 )
 
-# Fast
+## Fast
 objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.1),
                                         mortalityshape = seq(20, 25, 5),
                                         longevity = seq(125, 600, 100),
                                         mANPPproportion = seq(3.5, 6, 1))
 )
-# Medium
+## Medium
 objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.02),
                                         mortalityshape = seq(20, 25, 2),

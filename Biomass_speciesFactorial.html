@@ -3346,7 +3346,7 @@ installSpaDES()
 Require(c(&quot;PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)&quot;,
           &quot;reproducible&quot;), upgrade = FALSE)
 
-# Modules
+## Modules
 setPaths(rasterPath = tempdir(),
          cachePath =  file.path(tempdir(), &quot;Cache&quot;),
          modulePath = file.path(&quot;modules&quot;),
@@ -3356,8 +3356,7 @@ setPaths(rasterPath = tempdir(),
 moduleNameAndBranch &lt;- c(&quot;Biomass_speciesParameters@EliotTweaks&quot;,
                          &quot;Biomass_speciesFactorial@main&quot;)
 lapply(moduleNameAndBranch, function(modName) {
-  Cache(getModule, file.path(&quot;PredictiveEcology&quot;, modName), #modulePath = getPaths()$modulePath, 
-        overwrite = TRUE)
+  Cache(getModule, file.path(&quot;PredictiveEcology&quot;, modName), overwrite = TRUE)
 })
 modules &lt;- gsub(&quot;@.+&quot;, &quot;&quot;, moduleNameAndBranch)
 modules &lt;- c(&quot;Biomass_speciesFactorial&quot;, modules)
@@ -3369,7 +3368,7 @@ outputs &lt;- data.frame(expand.grid(
   stringsAsFactors = FALSE
 ))
 
-# Slow and large
+## Slow and large
 objects &lt;- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.02),
                                         mortalityshape = seq(20, 25, 1),
@@ -3377,14 +3376,14 @@ objects &lt;- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         mANPPproportion = seq(3.5, 6, 0.25))
 )
 
-# Fast
+## Fast
 objects &lt;- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.1),
                                         mortalityshape = seq(20, 25, 5),
                                         longevity = seq(125, 600, 100),
                                         mANPPproportion = seq(3.5, 6, 1))
 )
-# Medium
+## Medium
 objects &lt;- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.02),
                                         mortalityshape = seq(20, 25, 2),
