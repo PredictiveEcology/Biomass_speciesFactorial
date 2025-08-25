@@ -248,9 +248,14 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-Biomass-species
 ## It requires a version of Biomass_core that is .gitignored:
 ##  - the version had many changes to accommodate the 'no regeneration' scenario;
 ## - many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
-options(reproducible.showSimilar = TRUE, 
-        reproducible.useMemoise = FALSE, reproducible.cacheSaveFormat = "qs", spades.moduleCodeChecks = FALSE,
-        reproducible.showSimilarDepth = 5, spades.recoveryMode = FALSE)
+options(
+  reproducible.cacheSaveFormat = "qs",
+  reproducible.showSimilar = TRUE,
+  reproducible.showSimilarDepth = 5,
+  reproducible.useMemoise = FALSE,
+  spades.moduleCodeChecks = FALSE,
+  spades.recoveryMode = FALSE
+)
 
 ## Packages
 if (!require("Require")) {
@@ -262,16 +267,14 @@ Require(c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)",
           "reproducible"), upgrade = FALSE)
 
 # Modules
-setPaths(rasterPath = "temp",
-         cachePath =  file.path("temp/Cache"),
+setPaths(rasterPath = tempdir(),
+         cachePath =  file.path(tempdir(), "Cache"),
          modulePath = file.path("modules"),
          inputPath = file.path(getwd(), "inputs"),
          outputPath = file.path(getwd(),"outputs"))
 
 moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks",
-                         "Biomass_speciesFactorial@main"#, "Biomass_borealDataPrep@development", 
-                         #"Biomass_core@development"
-                         )
+                         "Biomass_speciesFactorial@main")
 lapply(moduleNameAndBranch, function(modName) {
   Cache(getModule, file.path("PredictiveEcology", modName), #modulePath = getPaths()$modulePath, 
         overwrite = TRUE)
@@ -279,10 +282,12 @@ lapply(moduleNameAndBranch, function(modName) {
 modules <- gsub("@.+", "", moduleNameAndBranch)
 modules <- c("Biomass_speciesFactorial", modules)
 
-outputs <- data.frame(expand.grid(objectName = c("species", "speciesEcoregion"),
-                                  saveTime = 0,
-                                  eventPriority = 10, fun = "qs::qsave",
-                                  stringsAsFactors = FALSE))
+outputs <- data.frame(expand.grid(
+  objectName = c("species", "speciesEcoregion"),
+  saveTime = 0,
+  eventPriority = 10, fun = "qs::qsave",
+  stringsAsFactors = FALSE
+))
 
 # Slow and large
 objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,

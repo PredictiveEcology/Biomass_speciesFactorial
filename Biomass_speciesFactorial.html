@@ -3328,9 +3328,14 @@ A large species table ( sensu <code>Biomass_core</code>) with all columns necess
 ## It requires a version of Biomass_core that is .gitignored:
 ##  - the version had many changes to accommodate the &#39;no regeneration&#39; scenario;
 ## - many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
-options(reproducible.showSimilar = TRUE, 
-        reproducible.useMemoise = FALSE, reproducible.cacheSaveFormat = &quot;qs&quot;, spades.moduleCodeChecks = FALSE,
-        reproducible.showSimilarDepth = 5, spades.recoveryMode = FALSE)
+options(
+  reproducible.cacheSaveFormat = &quot;qs&quot;,
+  reproducible.showSimilar = TRUE,
+  reproducible.showSimilarDepth = 5,
+  reproducible.useMemoise = FALSE,
+  spades.moduleCodeChecks = FALSE,
+  spades.recoveryMode = FALSE
+)
 
 ## Packages
 if (!require(&quot;Require&quot;)) {
@@ -3342,16 +3347,14 @@ Require(c(&quot;PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)&quot;,
           &quot;reproducible&quot;), upgrade = FALSE)
 
 # Modules
-setPaths(rasterPath = &quot;temp&quot;,
-         cachePath =  file.path(&quot;temp/Cache&quot;),
+setPaths(rasterPath = tempdir(),
+         cachePath =  file.path(tempdir(), &quot;Cache&quot;),
          modulePath = file.path(&quot;modules&quot;),
          inputPath = file.path(getwd(), &quot;inputs&quot;),
          outputPath = file.path(getwd(),&quot;outputs&quot;))
 
 moduleNameAndBranch &lt;- c(&quot;Biomass_speciesParameters@EliotTweaks&quot;,
-                         &quot;Biomass_speciesFactorial@main&quot;#, &quot;Biomass_borealDataPrep@development&quot;, 
-                         #&quot;Biomass_core@development&quot;
-                         )
+                         &quot;Biomass_speciesFactorial@main&quot;)
 lapply(moduleNameAndBranch, function(modName) {
   Cache(getModule, file.path(&quot;PredictiveEcology&quot;, modName), #modulePath = getPaths()$modulePath, 
         overwrite = TRUE)
@@ -3359,10 +3362,12 @@ lapply(moduleNameAndBranch, function(modName) {
 modules &lt;- gsub(&quot;@.+&quot;, &quot;&quot;, moduleNameAndBranch)
 modules &lt;- c(&quot;Biomass_speciesFactorial&quot;, modules)
 
-outputs &lt;- data.frame(expand.grid(objectName = c(&quot;species&quot;, &quot;speciesEcoregion&quot;),
-                                  saveTime = 0,
-                                  eventPriority = 10, fun = &quot;qs::qsave&quot;,
-                                  stringsAsFactors = FALSE))
+outputs &lt;- data.frame(expand.grid(
+  objectName = c(&quot;species&quot;, &quot;speciesEcoregion&quot;),
+  saveTime = 0,
+  eventPriority = 10, fun = &quot;qs::qsave&quot;,
+  stringsAsFactors = FALSE
+))
 
 # Slow and large
 objects &lt;- list(argsForFactorial = list(cohortsPerPixel = 1:2,
