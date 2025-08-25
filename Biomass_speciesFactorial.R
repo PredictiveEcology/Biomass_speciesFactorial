@@ -41,9 +41,9 @@ defineModule(sim, list(
                           "have different numbers of factorial combinations.",
                           "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
     defineParameter("initialB", "numeric", 10, 1, NA,
-                    paste("initial cohort biomass at age = 1. If NA, will use `maxBInFactorial`/30",
-                          "akin to the LANDIS-II Biomass Succession default. Must be greater than
-                          `P(sim)$minCohortBiomass")),
+                    paste("initial cohort biomass at `age = 1`.",
+                          "If `NA`, will use `maxBInFactorial/30` akin to the LANDIS-II Biomass Succession default.",
+                          "Must be greater than `P(sim)$minCohortBiomass`")),
     defineParameter("maxBInFactorial", "integer", 5000L, NA, NA,
                     paste("The arbitrary maximum biomass for the factorial simulations.",
                           "This is a per-species maximum within a pixel.")),

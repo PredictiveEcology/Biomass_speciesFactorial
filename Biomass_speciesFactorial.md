@@ -150,7 +150,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-Biomass-species
    <td style="text-align:left;"> 10 </td>
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> initial cohort biomass at age = 1. If NA, will use `maxBInFactorial`/30 akin to the LANDIS-II Biomass Succession default. Must be greater than `P(sim)$minCohortBiomass </td>
+   <td style="text-align:left;"> initial cohort biomass at `age = 1`. If `NA`, will use `maxBInFactorial/30` akin to the LANDIS-II Biomass Succession default. Must be greater than `P(sim)$minCohortBiomass` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> maxBInFactorial </td>
@@ -292,7 +292,8 @@ outputs <- data.frame(expand.grid(
 objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.02),
                                         mortalityshape = seq(20, 25, 1),
-                                        longevity = seq(125, 400, 25), # not 600 -- too big
+                                        ## not longevity 600 -- too big
+                                        longevity = seq(125, 400, 25),
                                         mANPPproportion = seq(3.5, 6, 0.25))
 )
 
@@ -314,9 +315,10 @@ objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
 simOut <- simInitAndSpades(
   times = list(start = 0, end = 0), # params = parameters, 
   modules = modules, 
-  params = list(Biomass_speciesFactorial = list(.plots = NA,#"pdf",
-                                                runExperiment = T),
-                Biomass_speciesParameters = list(.plots = "pdf")),
+  params = list(
+    Biomass_speciesFactorial = list(.plots = NA, runExperiment = TRUE),
+    Biomass_speciesParameters = list(.plots = "pdf")
+  ),
   outputs = outputs,
   objects = objects,
   debug = 1

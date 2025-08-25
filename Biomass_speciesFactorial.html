@@ -3239,7 +3239,87 @@ numeric
 NA
 </td>
 <td style="text-align:left;">
-initial cohort biomass at age = 1. If NA, will use <code>maxBInFactorial</code>/30 akin to the LANDIS-II Biomass Succession default. Must be greater than <code>P(sim)$minCohortBiomass &lt;/td&gt;   &lt;/tr&gt;   &lt;tr&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; maxBInFactorial &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; integer &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; 5000 &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; The arbitrary maximum biomass for the factorial simulations. This is a per-species maximum within a pixel. &lt;/td&gt;   &lt;/tr&gt;   &lt;tr&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; minCohortBiomass &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; numeric &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; 9 &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; The smallest amount of biomass before a cohort is removed from a simulation. Barring removal via this parameter, cohorts can persist with B = 1 until age = longevity. &lt;/td&gt;   &lt;/tr&gt;   &lt;tr&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; readExperimentFiles &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; logical &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; TRUE &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; Reads all the</code>cohortData<code>files that were saved to disk during the experiment. Note that this can be run even if</code>runExperiment = FALSE<code>. &lt;/td&gt;   &lt;/tr&gt;   &lt;tr&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; runExperiment &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; logical &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; TRUE &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; NA &lt;/td&gt;    &lt;td style=&quot;text-align:left;&quot;&gt; A logical indicating whether to run the experiment (may take time). See</code>readExperimentFiles<code>, which may be useful if the</code>cohortData` files have already been saved and all that is needed is reading them in.
+initial cohort biomass at <code>age = 1</code>. If <code>NA</code>, will use <code>maxBInFactorial/30</code> akin to the LANDIS-II Biomass Succession default. Must be greater than <code>P(sim)$minCohortBiomass</code>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+maxBInFactorial
+</td>
+<td style="text-align:left;">
+integer
+</td>
+<td style="text-align:left;">
+5000
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+The arbitrary maximum biomass for the factorial simulations. This is a per-species maximum within a pixel.
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+minCohortBiomass
+</td>
+<td style="text-align:left;">
+numeric
+</td>
+<td style="text-align:left;">
+9
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+The smallest amount of biomass before a cohort is removed from a simulation. Barring removal via this parameter, cohorts can persist with B = 1 until age = longevity.
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+readExperimentFiles
+</td>
+<td style="text-align:left;">
+logical
+</td>
+<td style="text-align:left;">
+TRUE
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+Reads all the <code>cohortData</code> files that were saved to disk during the experiment. Note that this can be run even if <code>runExperiment = FALSE</code>.
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+runExperiment
+</td>
+<td style="text-align:left;">
+logical
+</td>
+<td style="text-align:left;">
+TRUE
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:left;">
+A logical indicating whether to run the experiment (may take time). See <code>readExperimentFiles</code>, which may be useful if the <code>cohortData</code> files have already been saved and all that is needed is reading them in.
 </td>
 </tr>
 </tbody>
@@ -3372,7 +3452,8 @@ outputs &lt;- data.frame(expand.grid(
 objects &lt;- list(argsForFactorial = list(cohortsPerPixel = 1:2,
                                         growthcurve = seq(0.65, 0.85, 0.02),
                                         mortalityshape = seq(20, 25, 1),
-                                        longevity = seq(125, 400, 25), # not 600 -- too big
+                                        ## not longevity 600 -- too big
+                                        longevity = seq(125, 400, 25),
                                         mANPPproportion = seq(3.5, 6, 0.25))
 )
 
@@ -3394,9 +3475,10 @@ objects &lt;- list(argsForFactorial = list(cohortsPerPixel = 1:2,
 simOut &lt;- simInitAndSpades(
   times = list(start = 0, end = 0), # params = parameters, 
   modules = modules, 
-  params = list(Biomass_speciesFactorial = list(.plots = NA,#&quot;pdf&quot;,
-                                                runExperiment = T),
-                Biomass_speciesParameters = list(.plots = &quot;pdf&quot;)),
+  params = list(
+    Biomass_speciesFactorial = list(.plots = NA, runExperiment = TRUE),
+    Biomass_speciesParameters = list(.plots = &quot;pdf&quot;)
+  ),
   outputs = outputs,
   objects = objects,
   debug = 1
