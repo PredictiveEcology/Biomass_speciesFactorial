@@ -61,7 +61,7 @@ defineModule(sim, list(
   inputObjects = bindrows(
     expectsInput("argsForFactorial", "list",
                  desc = paste(
-                   "A named list of parameters in the species Table, with the range of values",
+                   "A named list of parameters in the species table, with the range of values",
                    "they each should take. Internally, this module will run `expand.grid` on these,",
                    "then will take the 'upper triangle' of the array, including the diagonal."
                  ),
@@ -149,8 +149,8 @@ Init <- function(sim) {
     }
   }
 
-  # The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
-  #   if desired. We will still have the list of files that would be created.
+  ## The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
+  ##   if desired. We will still have the list of files that would be created.
   endTime <- max(sim$argsForFactorial$longevity)
   mod$times <- list(start = 0, end = endTime)
 
@@ -163,11 +163,10 @@ Init <- function(sim) {
   mod$paths <- mod$pathsOrig
   mod$paths$outputPath <- file.path(inputPath(sim), paste0("factorial_", mod$dig))
   mod$paths$modulePath <- file.path(modulePath(sim), currentModule(sim), "submodules")
-  # mod$paths$outputPath <- inputPath(sim)
 
   sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
                                 paths = mod$paths, .cacheExtra = mod$dig)
-  # Next sequence is all dependent on argsForFactorial, so do digest once
+  ## Next sequence is all dependent on argsForFactorial, so do digest once
   species1And2 <- Cache(do.call, factorialSpeciesTable, sim$argsForFactorial,
                         .cacheExtra = mod$dig, omitArgs = c("args"))
   speciesTable <- Cache(factorialSpeciesTableFillOut, species1And2,
