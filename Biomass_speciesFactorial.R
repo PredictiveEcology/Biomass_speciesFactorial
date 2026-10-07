@@ -118,7 +118,7 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
           pathsOrig = mod$pathsOrig,
           times = mod$times,
           modules = modules(sim),
-          minCohortB = P(sim)$minCohortB,
+          minCohortB = P(sim)$minCohortBiomass,
           initialB = P(sim)$initialB,
           maxBInFactorial = P(sim)$maxBInFactorial,
           factorialOutputs = sim$factorialOutputs,
@@ -140,19 +140,13 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
       plotFactorial(sim)
     },
     save = {
-      ## One copy of the factorial tables lives in the cache; this run's inputPath gets hard links to it.
-      paths <- saveFactorialFiles(
-        cohortData = mod$cohortDataFactorial,
-        speciesTable = mod$speciesTableFactorial,
-        inputPath = inputPath(sim),
-        cachePath = cachePath(sim)
+      ## One copy in reproducible.destinationPathShared (if set); this run's outputPath gets hard links.
+      ## The files are not registerOutputs()'d: they are 1.5 GB, and BSP finds them via these paths.
+      files <- saveFactorialFiles(
+        mod$cohortDataFactorial, mod$speciesTableFactorial, dig = mod$dig, destinationPath = outputPath(sim)
       )
-      sim$cohortDataFactorial_path <- fs::as_fs_path(paths[["cohortData"]])
-      sim$speciesTableFactorial_path <- fs::as_fs_path(paths[["speciesTable"]])
-
-      ## NOTE: needs to be character (registerOutputs chokes on fs_path class)
-      sim <- registerOutputs(as.character(sim$cohortDataFactorial_path), sim)
-      sim <- registerOutputs(as.character(sim$speciesTableFactorial_path), sim)
+      sim$cohortDataFactorial_path <- fs::as_fs_path(files[["cohortData"]])
+      sim$speciesTableFactorial_path <- fs::as_fs_path(files[["speciesTable"]])
 
       ## cleanup + get rid of the arrow dataset pointers so Cache() can be used on the simList
       mod$cohortDataFactorial <- NULL
@@ -183,8 +177,8 @@ Init <- function(sim) {
   mod$times <- list(start = 0, end = endTime)
 
   message("Setting up factorial combinations of species traits, and associated initial cohortData table")
-  mod$dig <- CacheDigest(c(sim$argsForFactorial, P(sim)$initialB,
-                           P(sim$minCohortBiomass, P(sim)$maxBInFactorial)))$outputHash
+  mod$dig <- factorialDigest(sim$argsForFactorial, P(sim)$initialB,
+                             P(sim)$minCohortBiomass, P(sim)$maxBInFactorial)
   mod$pathsOrig <- paths(sim) ## TODO: confirm this
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
@@ -222,48 +216,45 @@ factorialOutputs <- function(times, paths) {
   outputs(ss)
 }
 
-#' Save the factorial tables once, in the cache, and hard link them into `inputPath`
+## Everything that defines the content of the factorial; names its files and keys its caches
+factorialDigest <- function(argsForFactorial, initialB, minCohortBiomass, maxBInFactorial) {
+  CacheDigest(list(argsForFactorial, initialB, minCohortBiomass, maxBInFactorial))$outputHash
+}
+
+#' Save the factorial tables once and hard link them into `destinationPath`
 #'
 #' The tables are large (about 1.5 GB), so each run folder must not hold its own copy.
-#' The write is `Cache()`d and goes to `file.path(cachePath, "factorialFiles")` (or the first
-#' `reproducible.destinationPathShared`, if set); `prepInputs()` then hard links the files from
-#' there into `inputPath` (see the `destinationPathShared` option of [reproducible::reproducibleOptions()]).
+#' `prepInputs()` runs `writeFactorialFile()` only if the file is missing. If
+#' `reproducible.destinationPathShared` is set, it writes there once and hard links the file
+#' into `destinationPath`; otherwise it writes into `destinationPath`.
 #' Each table is one feather file, which `arrow::open_dataset(path, format = "feather")` reads.
 #'
 #' @param cohortData,speciesTable data.frames to save.
-#' @param inputPath Directory that receives the (linked) files.
-#' @param cachePath The cache; the shared copy is in a subfolder of it.
+#' @param dig The module's digest of everything that defines the factorial; part of the file names.
+#' @param destinationPath Directory that receives the (linked) files.
 #'
-#' @return Named character vector (`cohortData`, `speciesTable`) of the file paths in `inputPath`.
+#' @return Named character vector (`cohortData`, `speciesTable`) of the file paths in `destinationPath`.
 #' @export
-saveFactorialFiles <- function(cohortData, speciesTable, inputPath, cachePath) {
-  store <- getOption("reproducible.destinationPathShared")[1]
-  if (is.null(store) || is.na(store)) store <- file.path(cachePath, "factorialFiles")
-
-  ## the rows of a factorial object will determine whether it is unique in 99.9% of cases
-  fileNames <- c(cohortData = paste0("cohortDataFactorial_", nrow(cohortData), ".df"),
-                 speciesTable = paste0("speciesTableFactorial_", nrow(speciesTable), ".df"))
-
-  ## if the shared files are gone, a cache hit would leave nothing to link: write them again and refresh the entry
-  haveFiles <- all(file.exists(file.path(store, fileNames)))
-  writeFactorialFiles(cohortData, speciesTable, fileNames = fileNames, destination = store) |>
-    Cache(omitArgs = c("cohortData", "speciesTable"), cachePath = cachePath, useCache = if (haveFiles) TRUE else "overwrite",
-          .cacheExtra = list(fileNames, nrow(cohortData), nrow(speciesTable)))
-
-  opts <- options(reproducible.destinationPathShared = store)
-  on.exit(options(opts))
-  vapply(fileNames, function(f) {
-    prepInputs(targetFile = f, destinationPath = inputPath, fun = NA, useCache = FALSE) |>
+saveFactorialFiles <- function(cohortData, speciesTable, dig, destinationPath) {
+  files <- c(cohortData = paste0("cohortDataFactorial_", dig, ".df"),
+             speciesTable = paste0("speciesTableFactorial_", dig, ".df"))
+  tbls <- list(cohortData = cohortData, speciesTable = speciesTable)
+  vapply(names(files), function(nm) {
+    ## dlFun is a quoted call: prepInputs fills targetFile and destinationPath (the shared store
+    ## when that option is set) and passes `tbl` on through `...`.
+    prepInputs(targetFile = files[[nm]], destinationPath = destinationPath, fun = NA, useCache = FALSE,
+               dlFun = quote(writeFactorialFile(tbl, targetFile, destinationPath)), tbl = tbls[[nm]]) |>
       as.character()
   }, character(1))
 }
 
 ## NOTE: arrow wants data.frame, not data.table (b/c of attributes etc.)
-writeFactorialFiles <- function(cohortData, speciesTable, fileNames, destination) {
-  checkPath(destination, create = TRUE)
-  arrow::write_feather(as.data.frame(cohortData), file.path(destination, fileNames[["cohortData"]]))
-  arrow::write_feather(as.data.frame(speciesTable), file.path(destination, fileNames[["speciesTable"]]))
-  fileNames
+## prepInputs retries a quoted dlFun in other frames until `targetFile` and `destinationPath` resolve,
+## so the arguments are forced before anything is written.
+writeFactorialFile <- function(tbl, targetFile, destinationPath) {
+  force(tbl); force(targetFile); force(destinationPath)
+  arrow::write_feather(as.data.frame(tbl), file.path(destinationPath, targetFile))
+  NULL ## tells prepInputs the function wrote the file itself
 }
 
 #' Run the factorial simulation experiment
