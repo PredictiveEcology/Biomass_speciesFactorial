@@ -1,5 +1,9 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_speciesFactorial/issues>
 
+# Biomass_speciesFactorial (development version)
+
+* Save `cohortDataFactorial` and `speciesTableFactorial` once, in the cache, and give each run a hard link in `inputPath(sim)`: the write is `Cache()`d to a shared folder and `prepInputs()` links it in (`reproducible.destinationPathShared`), instead of a 1.5 GB `arrow::write_dataset()` copy per run in `outputPath(sim)`. Each table is now a single feather file, which `arrow::open_dataset(format = "feather")` still reads. Add `arrow` to `reqdPkgs`.
+
 # Biomass_speciesFactorial 1.0.1
 
 * Wire the factorial outputs through `registerOutputs()`: register the `cohortDataFactorial` and `speciesTableFactorial` dataset paths as module outputs, coercing the paths to character because `registerOutputs()` chokes on the `fs_path` class.
