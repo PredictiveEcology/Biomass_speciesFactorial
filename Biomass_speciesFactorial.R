@@ -243,9 +243,11 @@ saveFactorialFiles <- function(cohortData, speciesTable, dig, destinationPath) {
   tbls <- list(cohortData = cohortData, speciesTable = speciesTable)
   vapply(names(files), function(nm) {
     ## dlFun is a quoted call: prepInputs fills targetFile and destinationPath (the shared store
-    ## when that option is set) and passes `tbl` on through `...`.
+    ## when that option is set) and passes `tbl` on through `...`. writeFactorialFile goes through
+    ## `...` too: inside a module it is not visible from the frames where prepInputs evaluates the call.
     prepInputs(targetFile = files[[nm]], destinationPath = destinationPath, fun = NA, useCache = FALSE,
-               dlFun = quote(writeFactorialFile(tbl, targetFile, destinationPath)), tbl = tbls[[nm]]) |>
+               dlFun = quote(writeFactorialFile(tbl, targetFile, destinationPath)), tbl = tbls[[nm]],
+               writeFactorialFile = writeFactorialFile) |>
       as.character()
   }, character(1))
 }
