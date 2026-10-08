@@ -3,7 +3,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_speciesFactorial/iss
 # Biomass_speciesFactorial (development version)
 
 * Save `cohortDataFactorial` and `speciesTableFactorial` as one feather file each, named by the module digest, via `prepInputs()` with a `dlFun` that runs only if the file is missing. With `reproducible.destinationPathShared` set, one shared copy is written and each run's `outputPath(sim)` gets a hard link, instead of a 1.5 GB `arrow::write_dataset()` copy per run. The files are no longer `registerOutputs()`'d. Add `arrow` to `reqdPkgs`.
-* Fix the digest of the factorial (`mod$dig`): `minCohortBiomass` and `maxBInFactorial` were not in it (misplaced bracket), and `P(sim)$minCohortB` partial-matched `minCohortBiomass`. File and cache names change, so the experiment reruns once.
+* Schedule the `save` event at `start(sim)` instead of `.plotInitialTime`: with `.plotInitialTime = NA` it never ran and `cohortDataFactorial_path`/`speciesTableFactorial_path` stayed `NULL` (found by Alex Chubaty).
+* Fix the digest of the factorial (`mod$dig`): `minCohortBiomass` and `maxBInFactorial` were not in it (misplaced bracket, found by Alex Chubaty), and `P(sim)$minCohortB` partial-matched `minCohortBiomass`. File and cache names change, so the experiment reruns once.
 
 # Biomass_speciesFactorial 1.0.1
 

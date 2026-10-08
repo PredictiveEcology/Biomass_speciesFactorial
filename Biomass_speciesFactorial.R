@@ -134,7 +134,9 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
 
       ## run these next events right away (use negative 'priority' value)
       sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Biomass_speciesFactorial", "plot", eventPriority = -1)
-      sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Biomass_speciesFactorial", "save", eventPriority = -1)
+      ## `save` must not depend on a plot parameter (`.plotInitialTime = NA` would never schedule it), and
+      ## runs before the other modules' `init` (priority `.first()` = 1), so Biomass_speciesParameters sees the paths
+      sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "save", eventPriority = -1)
     },
     plot = {
       plotFactorial(sim)
