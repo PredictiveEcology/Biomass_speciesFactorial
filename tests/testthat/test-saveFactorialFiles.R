@@ -64,6 +64,17 @@ test_that("a different digest gives different file names", {
   expect_false(any(basename(res1) %in% basename(res2)))
 })
 
+test_that("a missing cohortData table is not written, so a later run still writes the real one", {
+  scratch <- withr::local_tempdir()
+  withr::local_options(reproducible.destinationPathShared = NULL, reproducible.inputPaths = NULL)
+  out <- file.path(scratch, "outputs")
+  res0 <- saveFactorialFiles(NULL, speciesTable, dig = "abc", destinationPath = out)
+  expect_named(res0, "speciesTable")
+  res <- saveFactorialFiles(cohortData, speciesTable, dig = "abc", destinationPath = out)
+  cd <- arrow::open_dataset(res[["cohortData"]], format = "feather") |> as.data.frame()
+  expect_equal(nrow(cd), nrow(cohortData))
+})
+
 test_that("the digest covers every parameter that defines the factorial", {
   base <- factorialDigest(list(longevity = 1:3), 10, 9, 5000L)
   expect_identical(base, factorialDigest(list(longevity = 1:3), 10, 9, 5000L))
@@ -140,7 +151,7 @@ test_that("two processes saving into an empty shared store at once leave one int
 ## ---- the event: runs with `.plotInitialTime = NA` ---------------------------------------------
 
 ## Runs `init` and then `save` of the module without the experiment (it needs Biomass_core), so the
-## species table is the one `Init` builds from `argsForFactorial` and the cohortData table is empty.
+## species table is the one `Init` builds from `argsForFactorial` and there is no cohortData table.
 saveEventRun <- function(outputPath, plotInitialTime = NA, shared = NULL) {
   withr::local_options(reproducible.destinationPathShared = shared, .local_envir = parent.frame())
   paths <- testPaths
@@ -168,11 +179,10 @@ test_that("L137: the save event runs and sets the paths even with .plotInitialTi
   expect_lt(q$eventPriority, 1)
 
   sim <- r$sim
-  expect_false(is.null(sim$cohortDataFactorial_path))
+  expect_null(sim$cohortDataFactorial_path) ## readExperimentFiles = FALSE: nothing to save
   expect_false(is.null(sim$speciesTableFactorial_path))
-  expect_identical(dirname(as.character(sim$cohortDataFactorial_path)), normalizePath(file.path(scratch, "outputs")))
-  ## route 1: these are the paths a downstream module (Biomass_speciesParameters) is given and opens
-  expect_s3_class(arrow::open_dataset(sim$cohortDataFactorial_path, format = "feather"), "Dataset")
+  expect_identical(dirname(as.character(sim$speciesTableFactorial_path)), normalizePath(file.path(scratch, "outputs")))
+  ## route 1: this is the path a downstream module (Biomass_speciesParameters) is given and opens
   st <- arrow::open_dataset(sim$speciesTableFactorial_path, format = "feather") |> as.data.frame()
   expect_gt(nrow(st), 0L)
   expect_true("species" %in% names(st))
@@ -182,11 +192,18 @@ test_that("route 1: a second run with the same digest and outputPath does not re
   scratch <- withr::local_tempdir()
   out <- file.path(scratch, "outputs")
   s1 <- saveEventRun(out)$sim
-  f <- c(as.character(s1$cohortDataFactorial_path), as.character(s1$speciesTableFactorial_path))
+  f <- as.character(s1$speciesTableFactorial_path)
   before <- list(inode = inode(f), mtime = mtime(f))
   Sys.sleep(1.1)
   s2 <- saveEventRun(out)$sim
-  expect_identical(as.character(s2$cohortDataFactorial_path), f[[1]])
+  expect_identical(as.character(s2$speciesTableFactorial_path), f)
   expect_equal(inode(f), before$inode)
   expect_identical(mtime(f), before$mtime)
+})
+
+test_that("the saved files are registered in outputs(sim)", {
+  scratch <- withr::local_tempdir()
+  sim <- saveEventRun(file.path(scratch, "outputs"))$sim
+  os <- SpaDES.core::outputs(sim)
+  expect_contains(basename(os$file[os$saved %in% TRUE]), basename(as.character(sim$speciesTableFactorial_path)))
 })

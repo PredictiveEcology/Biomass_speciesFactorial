@@ -143,12 +143,17 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
     },
     save = {
       ## One copy in reproducible.destinationPathShared (if set); this run's outputPath gets hard links.
-      ## The files are not registerOutputs()'d: they are 1.5 GB, and BSP finds them via these paths.
+      ## With readExperimentFiles = FALSE there is no cohortData table, so it is not saved and has no path.
       files <- saveFactorialFiles(
         mod$cohortDataFactorial, mod$speciesTableFactorial, dig = mod$dig, destinationPath = outputPath(sim)
       )
-      sim$cohortDataFactorial_path <- fs::as_fs_path(files[["cohortData"]])
+      if ("cohortData" %in% names(files)) {
+        sim$cohortDataFactorial_path <- fs::as_fs_path(files[["cohortData"]])
+      }
       sim$speciesTableFactorial_path <- fs::as_fs_path(files[["speciesTable"]])
+
+      ## NOTE: needs to be character (registerOutputs chokes on fs_path class)
+      for (f in files) sim <- registerOutputs(f, sim)
 
       ## cleanup + get rid of the arrow dataset pointers so Cache() can be used on the simList
       mod$cohortDataFactorial <- NULL
@@ -230,17 +235,21 @@ factorialDigest <- function(argsForFactorial, initialB, minCohortBiomass, maxBIn
 #' `reproducible.destinationPathShared` is set, it writes there once and hard links the file
 #' into `destinationPath`; otherwise it writes into `destinationPath`.
 #' Each table is one feather file, which `arrow::open_dataset(path, format = "feather")` reads.
+#' A `NULL` table is not written: an empty file under the digest would be reused, and the real
+#' table never written.
 #'
-#' @param cohortData,speciesTable data.frames to save.
+#' @param cohortData,speciesTable data.frames to save, or `NULL` to skip one.
 #' @param dig The module's digest of everything that defines the factorial; part of the file names.
 #' @param destinationPath Directory that receives the (linked) files.
 #'
-#' @return Named character vector (`cohortData`, `speciesTable`) of the file paths in `destinationPath`.
+#' @return Named character vector (`cohortData`, `speciesTable`) of the file paths in `destinationPath`,
+#'   for the tables that are not `NULL`.
 #' @export
 saveFactorialFiles <- function(cohortData, speciesTable, dig, destinationPath) {
   files <- c(cohortData = paste0("cohortDataFactorial_", dig, ".df"),
              speciesTable = paste0("speciesTableFactorial_", dig, ".df"))
   tbls <- list(cohortData = cohortData, speciesTable = speciesTable)
+  files <- files[!vapply(tbls, is.null, logical(1))]
   vapply(names(files), function(nm) {
     ## dlFun is a quoted call: prepInputs fills targetFile and destinationPath (the shared store
     ## when that option is set) and passes `tbl` on through `...`. writeFactorialFile goes through
