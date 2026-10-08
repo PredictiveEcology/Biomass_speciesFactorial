@@ -111,7 +111,7 @@ knitr::kable(df_outputs, caption = "List of (ref:Biomass-speciesFactorial) outpu
 ##  - the version had many changes to accommodate the 'no regeneration' scenario;
 ## - many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
 options(
-  reproducible.cacheSaveFormat = "qs",
+  reproducible.cacheSaveFormat = "qs2",
   reproducible.showSimilar = TRUE,
   reproducible.showSimilarDepth = 5,
   reproducible.useMemoise = FALSE,
@@ -121,22 +121,26 @@ options(
 
 ## Packages
 if (!require("Require")) {
-  install.packages("Require"); require("Require")
+  install.packages("Require")
+  require("Require")
 }
 Require("PredictiveEcology/SpaDES.install", upgrade = FALSE)
 installSpaDES()
-Require(c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)",
-          "reproducible"), upgrade = FALSE)
+Require(
+  c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)", "reproducible"),
+  upgrade = FALSE
+)
 
 ## Modules
-setPaths(rasterPath = tempdir(),
-         cachePath =  file.path(tempdir(), "Cache"),
-         modulePath = file.path("modules"),
-         inputPath = file.path(getwd(), "inputs"),
-         outputPath = file.path(getwd(),"outputs"))
+setPaths(
+  rasterPath = tempdir(),
+  cachePath = file.path(tempdir(), "Cache"),
+  modulePath = file.path("modules"),
+  inputPath = file.path(getwd(), "inputs"),
+  outputPath = file.path(getwd(), "outputs")
+)
 
-moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks",
-                         "Biomass_speciesFactorial@main")
+moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks", "Biomass_speciesFactorial@main")
 lapply(moduleNameAndBranch, function(modName) {
   Cache(getModule, file.path("PredictiveEcology", modName), overwrite = TRUE)
 })
@@ -146,37 +150,47 @@ modules <- c("Biomass_speciesFactorial", modules)
 outputs <- data.frame(expand.grid(
   objectName = c("species", "speciesEcoregion"),
   saveTime = 0,
-  eventPriority = 10, fun = "qs::qsave",
+  eventPriority = 10,
+  fun = "qs2::qs_save",
   stringsAsFactors = FALSE
 ))
 
 ## Slow and large :
 ## -- longevity 600 would be too big, use 400;
-objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-                                        growthcurve = seq(0.65, 0.85, 0.02),
-                                        mortalityshape = seq(20, 25, 1),
-                                        longevity = seq(125, 400, 25),
-                                        mANPPproportion = seq(3.5, 6, 0.25))
+objects <- list(
+  argsForFactorial = list(
+    cohortsPerPixel = 1:2,
+    growthcurve = seq(0.65, 0.85, 0.02),
+    mortalityshape = seq(20, 25, 1),
+    longevity = seq(125, 400, 25),
+    mANPPproportion = seq(3.5, 6, 0.25)
+  )
 )
 
 ## Fast
-objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-                                        growthcurve = seq(0.65, 0.85, 0.1),
-                                        mortalityshape = seq(20, 25, 5),
-                                        longevity = seq(125, 600, 100),
-                                        mANPPproportion = seq(3.5, 6, 1))
+objects <- list(
+  argsForFactorial = list(
+    cohortsPerPixel = 1:2,
+    growthcurve = seq(0.65, 0.85, 0.1),
+    mortalityshape = seq(20, 25, 5),
+    longevity = seq(125, 600, 100),
+    mANPPproportion = seq(3.5, 6, 1)
+  )
 )
 ## Medium
-objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-                                        growthcurve = seq(0.65, 0.85, 0.02),
-                                        mortalityshape = seq(20, 25, 2),
-                                        longevity = seq(125, 600, 50),
-                                        mANPPproportion = seq(3.5, 6, 0.3))
+objects <- list(
+  argsForFactorial = list(
+    cohortsPerPixel = 1:2,
+    growthcurve = seq(0.65, 0.85, 0.02),
+    mortalityshape = seq(20, 25, 2),
+    longevity = seq(125, 600, 50),
+    mANPPproportion = seq(3.5, 6, 0.3)
+  )
 )
 
 simOut <- simInitAndSpades(
   times = list(start = 0, end = 0),
-  modules = modules, 
+  modules = modules,
   params = list(
     Biomass_speciesFactorial = list(.plots = NA, runExperiment = TRUE),
     Biomass_speciesParameters = list(.plots = "pdf")

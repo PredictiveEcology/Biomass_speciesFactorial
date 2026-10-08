@@ -1,27 +1,30 @@
 defineModule(sim, list(
   name = "Biomass_speciesFactorial",
-  description = paste("Build and simulate a fully factorial combination of selected",
-                      "species traits to be used in LANDIS-II type models."),
+  description = paste(
+    "Build and simulate a fully factorial combination of selected",
+    "species traits to be used in LANDIS-II type models."
+  ),
   keywords = "",
   authors = c(
-    person("Eliot", "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = "aut")
+    person("Eliot", "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = "aut"),
+    person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = "ctb")
   ),
   childModules = character(0),
-  version = list(Biomass_speciesFactorial = "0.0.13"),
+  version = list(Biomass_speciesFactorial = "1.1.0"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
-  documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")), ## same file
-  reqdPkgs = list("crayon", "data.table", "ggplot2", "terra", "viridis",
+  documentation = deparse(list("README.md", "Biomass_speciesFactorial.Rmd")),
+  reqdPkgs = list("arrow", "cli", "data.table", "fs", "ggplot2", "qs2", "terra", "viridis",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9025)",
                   "PredictiveEcology/Require@development (>= 1.0.1.9020)",
-                  "PredictiveEcology/reproducible@development (>= 2.0.8)",
-                  "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9010)",
+                  "PredictiveEcology/reproducible@development (>= 3.0.0)",
+                  "PredictiveEcology/SpaDES.core@development (>= 3.0.3.9000)",
                   "PredictiveEcology/SpaDES.project@development (>= 0.0.7.9013)"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plots", "character", "screen", NA, NA,
-                    "Used by Plots function, which can be optionally used here"),
+                    "Used by `Plots()` to output plots to 'screen', 'png', etc."),
     defineParameter(".plotInitialTime", "numeric", start(sim), NA, NA,
                     "Describes the simulation time at which the first plot event should occur."),
     defineParameter(".plotInterval", "numeric", NA, NA, NA,
@@ -42,7 +45,8 @@ defineModule(sim, list(
                           "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
     defineParameter("initialB", "numeric", 10, 1, NA,
                     paste("initial cohort biomass at `age = 1`.",
-                          "If `NA`, will use `maxBInFactorial/30` akin to the LANDIS-II Biomass Succession default.",
+                          "If `NA`, will use `maxBInFactorial / 30` akin to the",
+                          "LANDIS-II Biomass Succession default.",
                           "Must be greater than `P(sim)$minCohortBiomass`")),
     defineParameter("maxBInFactorial", "integer", 5000L, NA, NA,
                     paste("The arbitrary maximum biomass for the factorial simulations.",
@@ -61,17 +65,19 @@ defineModule(sim, list(
   inputObjects = bindrows(
     expectsInput("argsForFactorial", "list",
                  desc = paste(
-                   "A named list of parameters in the species Table, with the range of values",
+                   "A named list of parameters in the species table, with the range of values",
                    "they each should take. Internally, this module will run `expand.grid` on these,",
                    "then will take the 'upper triangle' of the array, including the diagonal."
                  ),
                  sourceURL = NA)
   ),
   outputObjects = bindrows(
-    createsOutput("cohortDataFactorial", "data.table",
+    createsOutput("cohortDataFactorial_path", "fs_path",
                   desc = paste(
-                    "A large `cohortData` table (*sensu* `Biomass_core`) columns necessary for",
-                    "running `Biomass_core`, e.g., `longevity`, `growthcurve`, `mortalityshape`, etc..",
+                    "Path where the `cohortDataFactorial` object is written as an `arrow` dataset.",
+                    "This dataset is a large `cohortData` table (*sensu* `Biomass_core`) columns",
+                    "necessary for running `Biomass_core`",
+                    "(e.g., `longevity`, `growthcurve`, `mortalityshape`, etc.).",
                     "It will have unique species for unique combination of the `argsForFactorial`,",
                     "and a fixed  value for all other species traits.",
                     "Currently, these are set to defaults internally."
@@ -83,8 +89,9 @@ defineModule(sim, list(
                     "This will give the file names of all the `cohortData` files that were produced."
                   )
     ),
-    createsOutput("speciesTableFactorial", "data.table",
+    createsOutput("speciesTableFactorial_path", "fs_path",
                   desc = paste(
+                    "Path where the `speciesTableFactorial` object is written as an `arrow` dataset.",
                     "A large species table (*sensu* `Biomass_core`) with all columns necessary for",
                     "running `Biomass_core`, e.g., `longevity`, `growthcurve`, `mortalityshape`, etc..",
                     "It will  have unique species for unique combination of the `argsForFactorial`,",
@@ -102,34 +109,57 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
   switch(
     eventType,
     init = {
-
       sim <- Init(sim)
+
       if (isTRUE(P(sim)$runExperiment)) {
-        Cache(RunExperiment, speciesTableFactorial = sim$speciesTableFactorial,
-              paths = mod$paths, pathsOrig = mod$pathsOrig,
-              times = mod$times, modules = modules(sim),
-              minCohortB = P(sim)$minCohortB, initialB = P(sim)$initialB,
-              maxBInFactorial = P(sim)$maxBInFactorial,
-              factorialOutputs = sim$factorialOutputs,
-              knownDigest = mod$dig,
-              omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
+        RunExperiment(
+          speciesTableFactorial = mod$speciesTableFactorial,
+          paths = mod$paths,
+          pathsOrig = mod$pathsOrig,
+          times = mod$times,
+          modules = modules(sim),
+          minCohortB = P(sim)$minCohortBiomass,
+          initialB = P(sim)$initialB,
+          maxBInFactorial = P(sim)$maxBInFactorial,
+          factorialOutputs = sim$factorialOutputs,
+          knownDigest = mod$dig
+        ) |>
+          Cache(omitArgs = c("speciesTableFactorial", "factorialOutputs", "maxBInFactorial"))
       }
 
-      #  sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "runExperiment", eventPriority = -1) # make it happen right away
       if (isTRUE(P(sim)$readExperimentFiles)) {
-        sim$cohortDataFactorial <- Cache(ReadExperimentFiles, sim$factorialOutputs,
-                                         .cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
-
-        # sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "readExperimentFiles", eventPriority = -1) # make it happen right away
+        mod$cohortDataFactorial <- ReadExperimentFiles(sim$factorialOutputs) |>
+          Cache(.cacheExtra = mod$dig, omitArgs = c("factorialOutputs"))
       }
-      sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Biomass_speciesFactorial", "plot", eventPriority = -1) # make it happen right away
-      sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_speciesFactorial", "save")
-    },
 
+      ## run these next events right away (use negative 'priority' value)
+      sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Biomass_speciesFactorial", "plot", eventPriority = -1)
+      ## `save` must not depend on a plot parameter (`.plotInitialTime = NA` would never schedule it), and
+      ## runs before the other modules' `init` (priority `.first()` = 1), so Biomass_speciesParameters sees the paths
+      sim <- scheduleEvent(sim, start(sim), "Biomass_speciesFactorial", "save", eventPriority = -1)
+    },
     plot = {
-      plotFun(sim) # example of a plotting function
+      plotFactorial(sim)
     },
     save = {
+      ## One copy in reproducible.destinationPathShared (if set); this run's outputPath gets hard links.
+      ## With readExperimentFiles = FALSE there is no cohortData table, so it is not saved and has no path.
+      files <- saveFactorialFiles(
+        mod$cohortDataFactorial, mod$speciesTableFactorial, dig = mod$dig, destinationPath = outputPath(sim)
+      )
+      if ("cohortData" %in% names(files)) {
+        sim$cohortDataFactorial_path <- fs::as_fs_path(files[["cohortData"]])
+      }
+      sim$speciesTableFactorial_path <- fs::as_fs_path(files[["speciesTable"]])
+
+      ## NOTE: needs to be character (registerOutputs chokes on fs_path class)
+      for (f in files) sim <- registerOutputs(f, sim)
+
+      ## cleanup + get rid of the arrow dataset pointers so Cache() can be used on the simList
+      mod$cohortDataFactorial <- NULL
+      mod$speciesTableFactorial <- NULL
+
+      gc(reset = TRUE)
     },
     warning(paste("Undefined event type: \'", current(sim)[1, "eventType", with = FALSE],
                   "\' in module \'", current(sim)[1, "moduleName", with = FALSE], "\'", sep = ""))
@@ -141,21 +171,21 @@ doEvent.Biomass_speciesFactorial = function(sim, eventTime, eventType) {
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
 Init <- function(sim) {
-
   if (!is.na(P(sim)$initialB)) {
     if (P(sim)$initialB <= P(sim)$minCohortBiomass) {
       stop("P(sim)$initialB must be greater than P(sim)$minCohortBiomass ",
-           "or all cohorts will be removed during factorial simulation")
+           "or all cohorts will be removed during factorial simulation.")
     }
   }
 
-  # The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
-  #   if desired. We will still have the list of files that would be created.
+  ## The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event
+  ##   if desired. We will still have the list of files that would be created.
   endTime <- max(sim$argsForFactorial$longevity)
   mod$times <- list(start = 0, end = endTime)
 
   message("Setting up factorial combinations of species traits, and associated initial cohortData table")
-  mod$dig <- CacheDigest(sim$argsForFactorial)$outputHash
+  mod$dig <- factorialDigest(sim$argsForFactorial, P(sim)$initialB,
+                             P(sim)$minCohortBiomass, P(sim)$maxBInFactorial)
   mod$pathsOrig <- paths(sim) ## TODO: confirm this
   on.exit({
     suppressMessages(do.call(setPaths, mod$pathsOrig))
@@ -163,60 +193,116 @@ Init <- function(sim) {
   mod$paths <- mod$pathsOrig
   mod$paths$outputPath <- file.path(inputPath(sim), paste0("factorial_", mod$dig))
   mod$paths$modulePath <- file.path(modulePath(sim), currentModule(sim), "submodules")
-  # mod$paths$outputPath <- inputPath(sim)
 
-  sim$factorialOutputs <- Cache(factorialOutputs, times = mod$times,
-                                paths = mod$paths, .cacheExtra = mod$dig)
-  # Next sequence is all dependent on argsForFactorial, so do digest once
-  species1And2 <- Cache(do.call, factorialSpeciesTable, sim$argsForFactorial,
-                        .cacheExtra = mod$dig, omitArgs = c("args"))
-  speciesTable <- Cache(factorialSpeciesTableFillOut, species1And2,
-                        .cacheExtra = mod$dig, omitArgs = "speciesTable")
-  sim$speciesTableFactorial <- speciesTable
+  sim$factorialOutputs <- factorialOutputs(times = mod$times, paths = mod$paths) |>
+    Cache(.cacheExtra = mod$dig)
+
+  ## Next sequence is all dependent on argsForFactorial, so do digest once
+  species1And2 <- do.call(factorialSpeciesTable, sim$argsForFactorial) |>
+    Cache(.cacheExtra = mod$dig, omitArgs = c("args"))
+  speciesTable <- factorialSpeciesTableFillOut(species1And2) |>
+    Cache(.cacheExtra = mod$dig, omitArgs = "speciesTable")
+  mod$speciesTableFactorial <- speciesTable
 
   return(invisible(sim))
 }
 
 factorialOutputs <- function(times, paths) {
-  outputs <- data.frame(expand.grid(objectName = "cohortData",
-                                    saveTime = unique(seq(times$start, times$end, by = 10)),
-                                    eventPriority = 1, fun = "qs::qsave",
-                                    stringsAsFactors = FALSE))
+  outputs <- expand.grid(
+    objectName = "cohortData",
+    saveTime = unique(seq(times$start, times$end, by = 10)),
+    eventPriority = 1,
+    fun = "qs2::qs_save",
+    stringsAsFactors = FALSE
+  ) |>
+    data.frame()
+
   suppressMessages({
     ss <- simInit(paths = paths, outputs = outputs, times = mod$times)
   })
   outputs(ss)
 }
 
+## Everything that defines the content of the factorial; names its files and keys its caches
+factorialDigest <- function(argsForFactorial, initialB, minCohortBiomass, maxBInFactorial) {
+  CacheDigest(list(argsForFactorial, initialB, minCohortBiomass, maxBInFactorial))$outputHash
+}
+
+#' Save the factorial tables once and hard link them into `destinationPath`
+#'
+#' The tables are large (about 1.5 GB), so each run folder must not hold its own copy.
+#' `prepInputs()` runs `writeFactorialFile()` only if the file is missing. If
+#' `reproducible.destinationPathShared` is set, it writes there once and hard links the file
+#' into `destinationPath`; otherwise it writes into `destinationPath`.
+#' Each table is one feather file, which `arrow::open_dataset(path, format = "feather")` reads.
+#' A `NULL` table is not written: an empty file under the digest would be reused, and the real
+#' table never written.
+#'
+#' @param cohortData,speciesTable data.frames to save, or `NULL` to skip one.
+#' @param dig The module's digest of everything that defines the factorial; part of the file names.
+#' @param destinationPath Directory that receives the (linked) files.
+#'
+#' @return Named character vector (`cohortData`, `speciesTable`) of the file paths in `destinationPath`,
+#'   for the tables that are not `NULL`.
+#' @export
+saveFactorialFiles <- function(cohortData, speciesTable, dig, destinationPath) {
+  files <- c(cohortData = paste0("cohortDataFactorial_", dig, ".df"),
+             speciesTable = paste0("speciesTableFactorial_", dig, ".df"))
+  tbls <- list(cohortData = cohortData, speciesTable = speciesTable)
+  files <- files[!vapply(tbls, is.null, logical(1))]
+  vapply(names(files), function(nm) {
+    ## dlFun is a quoted call: prepInputs fills targetFile and destinationPath (the shared store
+    ## when that option is set) and passes `tbl` on through `...`. writeFactorialFile goes through
+    ## `...` too: inside a module it is not visible from the frames where prepInputs evaluates the call.
+    prepInputs(targetFile = files[[nm]], destinationPath = destinationPath, fun = NA, useCache = FALSE,
+               dlFun = quote(writeFactorialFile(tbl, targetFile, destinationPath)), tbl = tbls[[nm]],
+               writeFactorialFile = writeFactorialFile) |>
+      as.character()
+  }, character(1))
+}
+
+## NOTE: arrow wants data.frame, not data.table (b/c of attributes etc.)
+## prepInputs retries a quoted dlFun in other frames until `targetFile` and `destinationPath` resolve,
+## so the arguments are forced before anything is written.
+writeFactorialFile <- function(tbl, targetFile, destinationPath) {
+  force(tbl); force(targetFile); force(destinationPath)
+  arrow::write_feather(as.data.frame(tbl), file.path(destinationPath, targetFile))
+  NULL ## tells prepInputs the function wrote the file itself
+}
+
+#' Run the factorial simulation experiment
+#'
+#' NOTE: this function is invoked for its side effects of writing output files to disk
+#'
+#' @export
 RunExperiment <- function(speciesTableFactorial, maxBInFactorial,
                           knownDigest, factorialOutputs, minCohortB,
                           initialB, paths, pathsOrig, times, modules) {
-  speciesEcoregion <- Cache(factorialSpeciesEcoregion,
-                            speciesTableFactorial,
-                            maxBInFactorial = maxBInFactorial,
-                            .cacheExtra = knownDigest,
-                            omitArgs = c("speciesTable"))
+  speciesEcoregion <- factorialSpeciesEcoregion(
+    speciesTableFactorial,
+    maxBInFactorial = maxBInFactorial
+  ) |>
+    Cache(.cacheExtra = knownDigest, omitArgs = c("speciesTable"))
 
   if (is.na(initialB)) {
-    initialB <- as.integer(round(maxBInFactorial/30)) #LANDIS-II BSM default
+    initialB <- as.integer(round(maxBInFactorial / 30)) #LANDIS-II BSM default
   }
 
-  cohortData <- Cache(factorialCohortData,
-                      speciesTableFactorial,
-                      speciesEcoregion,
-                      initialB = initialB,
-                      .cacheExtra = knownDigest,
-                      omitArgs = c("speciesTable", "speciesEcoregion"))
+  cohortData <- factorialCohortData(speciesTableFactorial, speciesEcoregion, initialB = initialB) |>
+    Cache(.cacheExtra = knownDigest, omitArgs = c("speciesTable", "speciesEcoregion"))
 
   ## Maps
   pixelGroupMap <- factorialPixelGroupMap(cohortData)
   studyArea <- as.polygons(terra::ext(pixelGroupMap), crs = "")
-  # studyArea <- as(extent(pixelGroupMap), 'SpatialPolygons')
   crs(studyArea) <- crs(pixelGroupMap)
   rasterToMatch <- pixelGroupMap
   ecoregionMap <- pixelGroupMap
-  levels(ecoregionMap) <- data.frame(ID = 1:max(cohortData$pixelGroup, na.rm = TRUE),
-                                     ecoregion = 1, ecoregionGroup = 1, stringsAsFactors = TRUE)
+  levels(ecoregionMap) <- data.frame(
+    ID = 1:max(cohortData$pixelGroup, na.rm = TRUE),
+    ecoregion = 1,
+    ecoregionGroup = 1,
+    stringsAsFactors = TRUE
+  )
 
   ## Simple Tables
   minRelativeB <- data.table("ecoregionGroup" = factor(1), minRelativeBDefaults())
@@ -224,9 +310,10 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial,
 
   ## Make sppColors
   sppColors <- viridis::viridis(n = NROW(speciesTableFactorial))
-  names(sppColors) <-  speciesTableFactorial$species
+  names(sppColors) <- speciesTableFactorial$species
 
-  modulesInProject <- list.dirs(pathsOrig$modulePath, full.names = TRUE, recursive = FALSE) |> as.list()
+  modulesInProject <- list.dirs(pathsOrig$modulePath, full.names = TRUE, recursive = FALSE) |>
+    as.list()
   names(modulesInProject) <- modulesInProject
   modulesInProject <- lapply(modulesInProject, basename)
   modules <- modifyList(modules, modulesInProject)
@@ -254,7 +341,8 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial,
       sppEquivCol = "B_factorial",
       successionTimestep = 10,
       vegLeadingProportion = 0,
-      minCohortBiomass = minCohortB
+      minCohortBiomass = minCohortB,
+      initialB = initialB
     )
   )
 
@@ -282,10 +370,10 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial,
   )
 
   opts <- options(
-    "LandR.assertions" = FALSE,
-    "LandR.verbose" = 0,
-    "spades.recoveryMode" = FALSE,
-    "spades.moduleCodeChecks" = FALSE # Turn off all module's code checking
+    LandR.assertions = FALSE,
+    LandR.verbose = 0,
+    spades.moduleCodeChecks = FALSE,
+    spades.recoveryMode = FALSE
   )
 
   message("Running simulation with all combinations; cohortData objects are saved in ", paths$outputPath)
@@ -294,19 +382,22 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial,
     options(opts)
   }, add = TRUE)
 
-  mySimOut <- Cache(simInitAndSpades,
-                    times = times,
-                    params = parameters,
-                    modules = modules,
-                    paths = paths,
-                    objects = objects,
-                    outputs = factorialOutputs,
-                    # quick = "paths",
-                    debug = 1,
-                    outputObjects = "pixelGroupMap",
-                    .cacheExtra = list(knownDigest, paths$outputPath),
-                    omitArgs = c("objects", "params", "debug", "paths"))
+  mySimOut <- simInitAndSpades(
+    times = times,
+    params = parameters,
+    modules = modules,
+    paths = paths,
+    objects = objects,
+    outputs = factorialOutputs,
+    debug = 1,
+    outputObjects = "pixelGroupMap"
+  ) |>
+    Cache(
+      .cacheExtra = list(knownDigest, paths$outputPath),
+      omitArgs = c("objects", "params", "debug", "paths")
+    )
 
+  ## NOTE: the outputs of this function we care about are the output files written to disk
   return(invisible(NULL))
 }
 
@@ -315,11 +406,11 @@ ReadExperimentFiles <- function(factorialOutputs) {
   fEs <- .fileExtensions()
   cdsList <- by(factorialOutputs, factorialOutputs[, "saveTime"], function(x) {
     fE <- reproducible:::fileExt(x$file)
-    wh <- fEs[fEs$exts %in% fE,]
-    message(crayon::green("reading: "))
-    cat(crayon::green(x$file, "..."))
+    wh <- fEs[fEs$exts %in% fE, ]
+    message(cli::col_green("reading: "))
+    cat(cli::col_green(x$file, "..."))
     cd <- getFromNamespace(wh$fun, ns = asNamespace(wh$package))(x$file)[, .(speciesCode, age, B, pixelGroup)]
-    cat(crayon::green(" Done!\n"))
+    cat(cli::col_green(" Done!\n"))
     return(cd)
   })
   message("rbindlisting the cohortData objects")
@@ -328,17 +419,18 @@ ReadExperimentFiles <- function(factorialOutputs) {
   return(invisible(cds))
 }
 
-### template for plot events
-plotFun <- function(sim) {
-  cohortDataForPlot <- Cache(subsampleForPlot, sim$cohortDataFactorial,
-                             sim$speciesTableFactorial,
-                             .cacheExtra = mod$dig,
-                             omitArgs = c("cds", "speciesTableFactorial"))
+plotFactorial <- function(sim) {
+  cohortDataForPlot <- subsampleForPlot(mod$cohortDataFactorial, mod$speciesTableFactorial) |>
+    Cache(.cacheExtra = mod$dig, omitArgs = c("cds", "speciesTableFactorial"))
 
   ## Filename on Windows can't have colon ":"
-  Plots(cohortDataForPlot, usePlot = FALSE,
-        fn = ggplotFactorial, filename = paste0("cohortFactorial_", gsub(":", "_", Sys.time())),
-        ggsaveArgs = list( width = 12, height = 7)) ## TODO: saving ggplot object using qs is SLOW -- massive file
+  Plots(
+    cohortDataForPlot,
+    usePlot = FALSE,
+    fn = ggplotFactorial,
+    filename = paste0("cohortFactorial_", gsub(":", "_", Sys.time())),
+    ggsaveArgs = list(width = 12, height = 7)
+  ) ## TODO: saving ggplot object using qs is SLOW -- massive file
 
   return(invisible(sim))
 }
@@ -346,8 +438,8 @@ plotFun <- function(sim) {
 subsampleForPlot <- function(cds, speciesTableFactorial) {
   uniq <- unique(cds$pixelGroup)
   sam <- Cache(sample, uniq, 64)
-  ff <- cds[pixelGroup %in% sam];
-  ff[, Sp := gsub(".+_", "", speciesCode)];
+  ff <- cds[pixelGroup %in% sam]
+  ff[, Sp := gsub(".+_", "", speciesCode)]
   ff[grep("^Sp", Sp, invert = TRUE), Sp := "Single"]
   ff[, maxB := max(B), by = "pixelGroup"]
   setkeyv(ff, c("pixelGroup", "Sp", "age"))
@@ -372,9 +464,9 @@ ggplotFactorial <- function(ff) {
   title <- paste0("Factorial Experiment: ", length(sam), " random plot")
   gg1 <- ggplot(ff, aes(x = age, y = B, colour = Sp)) +
     geom_line() +
-    facet_wrap(~ Title, nrow = ceiling(sqrt(length(sam))), scales = "fixed") +
+    facet_wrap(~Title, nrow = ceiling(sqrt(length(sam))), scales = "fixed") +
     ggtitle(title) +
-    theme(strip.text.x = element_text(size = 5)) #+
+    theme(strip.text.x = element_text(size = 5))
 
   gg1
 }
@@ -384,24 +476,30 @@ ggplotFactorial <- function(ff) {
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   if (!suppliedElsewhere("argsForFactorial")) {
-    sim$argsForFactorial <-
-      switch(P(sim)$factorialSize,
-             large = list(cohortsPerPixel = 1:2,
-                          growthcurve = seq(0.65, 0.85, 0.02),
-                          mortalityshape = seq(20, 25, 2),
-                          longevity = seq(125, 600, 25), # not 600 -- too big
-                          mANPPproportion = seq(3.5, 6, 0.25)),
-             medium = list(cohortsPerPixel = 1:2,
-                           growthcurve = seq(0.65, 0.85, 0.02),
-                           mortalityshape = seq(20, 25, 2),
-                           longevity = seq(125, 600, 50),
-                           mANPPproportion = seq(3.5, 6, 0.3)),
-             small = list(cohortsPerPixel = 1:2,
-                          growthcurve = seq(0.65, 0.85, 0.2),
-                          mortalityshape = seq(20, 25, 5),
-                          longevity = seq(125, 600, 100),
-                          mANPPproportion = seq(3.5, 6, 1))
+    sim$argsForFactorial <- switch(
+      P(sim)$factorialSize,
+      large = list(
+        cohortsPerPixel = 1:2,
+        growthcurve = seq(0.65, 0.85, 0.02),
+        mortalityshape = seq(20, 25, 2),
+        longevity = seq(125, 600, 25), # not 600 -- too big
+        mANPPproportion = seq(3.5, 6, 0.25)
+      ),
+      medium = list(
+        cohortsPerPixel = 1:2,
+        growthcurve = seq(0.65, 0.85, 0.02),
+        mortalityshape = seq(20, 25, 2),
+        longevity = seq(125, 600, 50),
+        mANPPproportion = seq(3.5, 6, 0.3)
+      ),
+      small = list(
+        cohortsPerPixel = 1:2,
+        growthcurve = seq(0.65, 0.85, 0.2),
+        mortalityshape = seq(20, 25, 5),
+        longevity = seq(125, 600, 100),
+        mANPPproportion = seq(3.5, 6, 1)
       )
+    )
   }
   return(invisible(sim))
 }

@@ -1,7 +1,7 @@
 ---
 title: "Biomass_speciesFactorial Manual"
-subtitle: "v.0.0.13"
-date: "Last updated: 2025-08-25"
+subtitle: "v.1.0.1"
+date: "Last updated: 2026-10-08"
 output:
   bookdown::html_document2:
     toc: true
@@ -31,7 +31,7 @@ always_allow_html: true
 
 #### Authors:
 
-Eliot McIntire <eliot.mcintire@nrcan-rncan.gc.ca> [aut]
+Eliot McIntire <eliot.mcintire@nrcan-rncan.gc.ca> [aut], Alex M. Chubaty <achubaty@for-cast.ca> [ctb]
 <!-- ideally separate authors with new lines, '\n' not working -->
 
 ## Module Overview
@@ -44,7 +44,7 @@ Create and run a factorial simulation experiment for LANDIS-II-like species trai
 
 Table \@ref(tab:moduleInputs-Biomass-speciesFactorial) shows the full list of module inputs.
 
-<table class="table" style="color: black; margin-left: auto; margin-right: auto;">
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:moduleInputs-Biomass-speciesFactorial)(\#tab:moduleInputs-Biomass-speciesFactorial)List of (ref:Biomass-speciesFactorial) input objects and their description.</caption>
  <thead>
   <tr>
@@ -58,7 +58,7 @@ Table \@ref(tab:moduleInputs-Biomass-speciesFactorial) shows the full list of mo
   <tr>
    <td style="text-align:left;"> argsForFactorial </td>
    <td style="text-align:left;"> list </td>
-   <td style="text-align:left;"> A named list of parameters in the species Table, with the range of values they each should take. Internally, this module will run `expand.grid` on these, then will take the 'upper triangle' of the array, including the diagonal. </td>
+   <td style="text-align:left;"> A named list of parameters in the species table, with the range of values they each should take. Internally, this module will run `expand.grid` on these, then will take the 'upper triangle' of the array, including the diagonal. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
 </tbody>
@@ -67,7 +67,7 @@ Table \@ref(tab:moduleInputs-Biomass-speciesFactorial) shows the full list of mo
 Summary of user-visible parameters (Table \@ref(tab:moduleParams-Biomass-speciesFactorial))
 
 
-<table class="table" style="color: black; margin-left: auto; margin-right: auto;">
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:moduleParams-Biomass-speciesFactorial)(\#tab:moduleParams-Biomass-speciesFactorial)List of (ref:Biomass-speciesFactorial) parameters and their description.</caption>
  <thead>
   <tr>
@@ -86,7 +86,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-Biomass-species
    <td style="text-align:left;"> screen </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Used by Plots function, which can be optionally used here </td>
+   <td style="text-align:left;"> Used by `Plots()` to output plots to 'screen', 'png', etc. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .plotInitialTime </td>
@@ -150,7 +150,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-Biomass-species
    <td style="text-align:left;"> 10 </td>
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> initial cohort biomass at `age = 1`. If `NA`, will use `maxBInFactorial/30` akin to the LANDIS-II Biomass Succession default. Must be greater than `P(sim)$minCohortBiomass` </td>
+   <td style="text-align:left;"> initial cohort biomass at `age = 1`. If `NA`, will use `maxBInFactorial / 30` akin to the LANDIS-II Biomass Succession default. Must be greater than `P(sim)$minCohortBiomass` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> maxBInFactorial </td>
@@ -206,7 +206,7 @@ Write what is saved.
 
 Description of the module outputs (Table \@ref(tab:moduleOutputs-Biomass-speciesFactorial)).
 
-<table class="table" style="color: black; margin-left: auto; margin-right: auto;">
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:moduleOutputs-Biomass-speciesFactorial)(\#tab:moduleOutputs-Biomass-speciesFactorial)List of (ref:Biomass-speciesFactorial) outputs and their description.</caption>
  <thead>
   <tr>
@@ -217,9 +217,9 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-Biomass-species
  </thead>
 <tbody>
   <tr>
-   <td style="text-align:left;"> cohortDataFactorial </td>
-   <td style="text-align:left;"> data.table </td>
-   <td style="text-align:left;"> A large `cohortData` table ( sensu `Biomass_core`) columns necessary for running `Biomass_core`, e.g., `longevity`, `growthcurve`, `mortalityshape`, etc.. It will have unique species for unique combination of the `argsForFactorial`, and a fixed value for all other species traits. Currently, these are set to defaults internally. </td>
+   <td style="text-align:left;"> cohortDataFactorial_path </td>
+   <td style="text-align:left;"> fs_path </td>
+   <td style="text-align:left;"> Path where the `cohortDataFactorial` object is written as an `arrow` dataset. This dataset is a large `cohortData` table ( sensu `Biomass_core`) columns necessary for running `Biomass_core` (e.g., `longevity`, `growthcurve`, `mortalityshape`, etc.). It will have unique species for unique combination of the `argsForFactorial`, and a fixed value for all other species traits. Currently, these are set to defaults internally. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> factorialOutputs </td>
@@ -227,9 +227,9 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-Biomass-species
    <td style="text-align:left;"> A data.table of the `outputs(sim)` that is used during the factorial. This will give the file names of all the `cohortData` files that were produced. </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> speciesTableFactorial </td>
-   <td style="text-align:left;"> data.table </td>
-   <td style="text-align:left;"> A large species table ( sensu `Biomass_core`) with all columns necessary for running `Biomass_core`, e.g., `longevity`, `growthcurve`, `mortalityshape`, etc.. It will have unique species for unique combination of the `argsForFactorial`, and a fixed value for all other species traits. Currently, these are set to defaults internally. </td>
+   <td style="text-align:left;"> speciesTableFactorial_path </td>
+   <td style="text-align:left;"> fs_path </td>
+   <td style="text-align:left;"> Path where the `speciesTableFactorial` object is written as an `arrow` dataset. A large species table ( sensu `Biomass_core`) with all columns necessary for running `Biomass_core`, e.g., `longevity`, `growthcurve`, `mortalityshape`, etc.. It will have unique species for unique combination of the `argsForFactorial`, and a fixed value for all other species traits. Currently, these are set to defaults internally. </td>
   </tr>
 </tbody>
 </table>
@@ -249,7 +249,7 @@ Description of the module outputs (Table \@ref(tab:moduleOutputs-Biomass-species
 ##  - the version had many changes to accommodate the 'no regeneration' scenario;
 ## - many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
 options(
-  reproducible.cacheSaveFormat = "qs",
+  reproducible.cacheSaveFormat = "qs2",
   reproducible.showSimilar = TRUE,
   reproducible.showSimilarDepth = 5,
   reproducible.useMemoise = FALSE,
@@ -259,22 +259,26 @@ options(
 
 ## Packages
 if (!require("Require")) {
-  install.packages("Require"); require("Require")
+  install.packages("Require")
+  require("Require")
 }
 Require("PredictiveEcology/SpaDES.install", upgrade = FALSE)
 installSpaDES()
-Require(c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)",
-          "reproducible"), upgrade = FALSE)
+Require(
+  c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)", "reproducible"),
+  upgrade = FALSE
+)
 
 ## Modules
-setPaths(rasterPath = tempdir(),
-         cachePath =  file.path(tempdir(), "Cache"),
-         modulePath = file.path("modules"),
-         inputPath = file.path(getwd(), "inputs"),
-         outputPath = file.path(getwd(),"outputs"))
+setPaths(
+  rasterPath = tempdir(),
+  cachePath = file.path(tempdir(), "Cache"),
+  modulePath = file.path("modules"),
+  inputPath = file.path(getwd(), "inputs"),
+  outputPath = file.path(getwd(), "outputs")
+)
 
-moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks",
-                         "Biomass_speciesFactorial@main")
+moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks", "Biomass_speciesFactorial@main")
 lapply(moduleNameAndBranch, function(modName) {
   Cache(getModule, file.path("PredictiveEcology", modName), overwrite = TRUE)
 })
@@ -284,37 +288,47 @@ modules <- c("Biomass_speciesFactorial", modules)
 outputs <- data.frame(expand.grid(
   objectName = c("species", "speciesEcoregion"),
   saveTime = 0,
-  eventPriority = 10, fun = "qs::qsave",
+  eventPriority = 10,
+  fun = "qs2::qs_save",
   stringsAsFactors = FALSE
 ))
 
 ## Slow and large :
 ## -- longevity 600 would be too big, use 400;
-objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-                                        growthcurve = seq(0.65, 0.85, 0.02),
-                                        mortalityshape = seq(20, 25, 1),
-                                        longevity = seq(125, 400, 25),
-                                        mANPPproportion = seq(3.5, 6, 0.25))
+objects <- list(
+  argsForFactorial = list(
+    cohortsPerPixel = 1:2,
+    growthcurve = seq(0.65, 0.85, 0.02),
+    mortalityshape = seq(20, 25, 1),
+    longevity = seq(125, 400, 25),
+    mANPPproportion = seq(3.5, 6, 0.25)
+  )
 )
 
 ## Fast
-objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-                                        growthcurve = seq(0.65, 0.85, 0.1),
-                                        mortalityshape = seq(20, 25, 5),
-                                        longevity = seq(125, 600, 100),
-                                        mANPPproportion = seq(3.5, 6, 1))
+objects <- list(
+  argsForFactorial = list(
+    cohortsPerPixel = 1:2,
+    growthcurve = seq(0.65, 0.85, 0.1),
+    mortalityshape = seq(20, 25, 5),
+    longevity = seq(125, 600, 100),
+    mANPPproportion = seq(3.5, 6, 1)
+  )
 )
 ## Medium
-objects <- list(argsForFactorial = list(cohortsPerPixel = 1:2,
-                                        growthcurve = seq(0.65, 0.85, 0.02),
-                                        mortalityshape = seq(20, 25, 2),
-                                        longevity = seq(125, 600, 50),
-                                        mANPPproportion = seq(3.5, 6, 0.3))
+objects <- list(
+  argsForFactorial = list(
+    cohortsPerPixel = 1:2,
+    growthcurve = seq(0.65, 0.85, 0.02),
+    mortalityshape = seq(20, 25, 2),
+    longevity = seq(125, 600, 50),
+    mANPPproportion = seq(3.5, 6, 0.3)
+  )
 )
 
 simOut <- simInitAndSpades(
   times = list(start = 0, end = 0),
-  modules = modules, 
+  modules = modules,
   params = list(
     Biomass_speciesFactorial = list(.plots = NA, runExperiment = TRUE),
     Biomass_speciesParameters = list(.plots = "pdf")

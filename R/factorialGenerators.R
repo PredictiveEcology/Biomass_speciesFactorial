@@ -1,5 +1,5 @@
 #' @export
-#' @importFrom data.table as.data.table
+#' @importFrom data.table as.data.table set
 factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
                                   mortalityshape = seq(18, 25, 1),
                                   longevity = seq(125, 300, 25),
@@ -77,13 +77,16 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
 
   set(speciesOut, NULL, "mortalityshape", asInteger(speciesOut$mortalityshape))
   set(speciesOut, NULL, "longevity", asInteger(speciesOut$longevity))
-  speciesOut[,.(species, longevity, growthcurve, mortalityshape, mANPPproportion, pixelGroup)]
+  speciesOut[, .(species, longevity, growthcurve, mortalityshape, mANPPproportion, pixelGroup)]
 }
 
-#'
-#' Will create a cohortData table from a `speciesTable`, and combine it with another
+#' Create a `cohortData` table from a `speciesTable`, and combine it with another
 #' `cohortData` table (e.g., from singles)
-#' Must have `species` and `pixelGroup`
+#'
+#' Must have `species` and `pixelGroup`.
+#'
+#' @export
+#' @importFrom data.table set setcolorder
 factorialCohortData <- function(speciesTable, speciesEcoregion, initialB) {
   if (!identical(speciesTable$species, as.character(speciesEcoregion$speciesCode)))
     stop("speciesTable and speciesEcoregion must have identical species and as.character(speciesCode)")
@@ -99,7 +102,8 @@ factorialCohortData <- function(speciesTable, speciesEcoregion, initialB) {
   setcolorder(cohortData2, c('speciesCode', 'pixelGroup', 'ecoregionGroup', 'age', "B"))
 }
 
-
+#' @export
+#' @importFrom data.table set setnames
 factorialSpeciesEcoregion <- function(speciesTable, maxBInFactorial) {
   speciesEcoregion <- speciesTable[, c("species", "mANPPproportion")]
 
@@ -114,17 +118,18 @@ factorialSpeciesEcoregion <- function(speciesTable, maxBInFactorial) {
   speciesEcoregion[]
 }
 
-
 factorialSpeciesTableFillOut <- function(speciesTable) {
   speciesTableInner <- speciesTable[, c("species", "longevity", "growthcurve", "mortalityshape", "mANPPproportion", "pixelGroup")]
   speciesTableInner[, c("sexualmature", 'seeddistance_eff', 'seeddistance_max', 'resproutprob',
-                        'resproutage_min', 'resproutage_max', 'postfireregen',
-                        'leaflongevity', 'wooddecayrate', 'leafLignin', 'hardsoft', "Area", "firetolerance",
+                        "resproutage_min", "resproutage_max", "postfireregen",
+                        "leaflongevity", "wooddecayrate", "leafLignin", "hardsoft", "Area", "firetolerance",
                         "shadetolerance") :=
-                      list(30L, 0L, 0L, 0.5, 0L, 0L, factor('none'), 3L, 0.07, 0.1, factor('soft'), factor("BP"), 3L, 1L)]
+                      list(30L, 0L, 0L, 0.5, 0L, 0L, factor("none"), 3L, 0.07, 0.1, factor("soft"), factor("BP"), 3L, 1L)]
   speciesTableInner[]
 }
 
+#' @export
+#' @importFrom terra ncell ncol nrow rast
 factorialPixelGroupMap <- function(cohortData) {
   pixelGroupMap <- terra::rast(res = c(1,1))
   nrow(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0)
