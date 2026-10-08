@@ -1,5 +1,7 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_speciesFactorial/issues>
 
+# Biomass_speciesFactorial (development version)
+
 # Biomass_speciesFactorial 1.1.0
 
 This release changes how the module stores its large table of simulated growth curves. The results are saved once as files on disk instead of being held in memory, and projects that share a data folder reuse one copy instead of writing a new 1.5 GB copy for every run. The module now uses the current file format for saved objects, and the times at which results are recorded follow the simulation's start and end instead of a fixed range.
