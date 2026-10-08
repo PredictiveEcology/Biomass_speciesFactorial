@@ -1,6 +1,10 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_speciesFactorial/issues>
 
-# Biomass_speciesFactorial (development version)
+# Biomass_speciesFactorial 1.1.0
+
+This release changes how the module stores its large table of simulated growth curves. The results are saved once as files on disk instead of being held in memory, and projects that share a data folder reuse one copy instead of writing a new 1.5 GB copy for every run. The module now uses the current file format for saved objects, and the times at which results are recorded follow the simulation's start and end instead of a fixed range.
+
+Several fixes make saved results more reliable. The files were sometimes not saved at all when plotting was turned off, and two settings were left out of the label that identifies a set of results, so a changed setting could reuse old results. The experiment reruns once after updating, because file names change.
 
 * Save `cohortDataFactorial` and `speciesTableFactorial` as one feather file each, named by the module digest, via `prepInputs()` with a `dlFun` that runs only if the file is missing. With `reproducible.destinationPathShared` set, one shared copy is written and each run's `outputPath(sim)` gets a hard link, instead of a 1.5 GB `arrow::write_dataset()` copy per run. With `readExperimentFiles = FALSE` there is no cohortData table, so only the species table is saved and `cohortDataFactorial_path` is not set. Add `arrow` to `reqdPkgs`.
 * Schedule the `save` event at `start(sim)` instead of `.plotInitialTime`: with `.plotInitialTime = NA` it never ran and `cohortDataFactorial_path`/`speciesTableFactorial_path` stayed `NULL` (found by Alex Chubaty).
