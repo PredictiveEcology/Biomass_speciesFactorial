@@ -17,8 +17,6 @@ link-citations: true
 always_allow_html: true
 ---
 
-# Biomass_speciesFactorial Module
-
 <!-- the following are text references used in captions for LaTeX compatibility -->
 (ref:Biomass-speciesFactorial) *Biomass_speciesFactorial*
 
@@ -48,11 +46,15 @@ if (!file.exists("figures/markdownBadge.png")) {
 
 ## Module Overview
 
-### Module summary
+### Module summary {#bsppfact-summary}
 
 Create and run a factorial simulation experiment for LANDIS-II-like species traits.
 
-### Module inputs and parameters
+Each combination of the traits in `argsForFactorial` (by default `growthcurve`, `mortalityshape`, `longevity` and `mANPPproportion`) is a "species".
+These species are simulated with *Biomass_core*, growing alone or in pairs in a pixel, without seed dispersal, and the resulting cohort biomasses are saved.
+*Biomass_speciesParameters* compares these theoretical growth curves to growth curves from permanent sample plot data, to calibrate the species traits used by *Biomass_core*.
+
+### Module inputs and parameters {#bsppfact-inputs-params}
 
 Table \@ref(tab:moduleInputs-Biomass-speciesFactorial) shows the full list of module inputs.
 
@@ -72,22 +74,47 @@ knitr::kable(df_params, caption = "List of (ref:Biomass-speciesFactorial) parame
   kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
 ```
 
-### Events
+### Events {#bsppfact-events}
 
-<!-- TODO -->
-Describe what happens for each event type.
+The module has three events, which all happen at the start of the simulation:
 
-### Plotting
+1.  `init` -- builds the factorial table of species traits from `argsForFactorial`.
+    If `argsForFactorial` is not supplied, it uses one of three default designs, chosen with `factorialSize` (`"small"`, `"medium"` or `"large"`).
+    Species are combined so that each pixel group has one species (`cohortsPerPixel = 1`) or a pair of species (`cohortsPerPixel = 2`).
+    Then:
+    -   if `runExperiment = TRUE`, it runs *Biomass_core* for as many years as the largest `longevity`, with no seeding and with `maxBInFactorial` as the maximum biomass of every species.
+        *Biomass_core* is downloaded from its `development` branch, unless it is already in the project's module folder.
+        `cohortData` is saved every 10 years, in a folder named `factorial_<digest>` in the `inputPath`, where `<digest>` identifies the factorial design.
+    -   if `readExperimentFiles = TRUE`, it reads all the saved `cohortData` files into one table.
+        This can be done without re-running the experiment (`runExperiment = FALSE`) if the files already exist.
 
-<!-- TODO -->
-Write what is plotted.
+    Both steps are cached, so re-running the module with the same design does not repeat them.
+    `init` also stops if `initialB` is not greater than `minCohortBiomass`, as all cohorts would be removed.
 
-### Saving
+2.  `plot` -- see [Plotting](#bsppfact-plotting).
 
-<!-- TODO -->
-Write what is saved.
+3.  `save` -- see [Saving](#bsppfact-saving).
 
-### Module outputs
+`plot` and `save` are scheduled with a negative priority, so they run right after `init` and before the `init` events of other modules, such as *Biomass_speciesParameters*.
+
+### Plotting {#bsppfact-plotting}
+
+At `.plotInitialTime`, the module plots the biomass of each species against age, for 64 randomly chosen pixel groups (one panel per pixel group).
+The panel titles give the traits of each species: longevity (`l`), `growthcurve` (`g`), `mortalityshape` (`m`) and `mANPPproportion` (`p`).
+The figure is shown on screen or saved as a file named `cohortFactorial_<date and time>`, depending on `.plots`.
+
+### Saving {#bsppfact-saving}
+
+The `save` event writes two tables as feather files, which can be read with `arrow::open_dataset(path, format = "feather")`:
+
+-   `speciesTableFactorial_<digest>.df` -- the species traits table of all the factorial species;
+-   `cohortDataFactorial_<digest>.df` -- the `cohortData` of all simulated years (only if `readExperimentFiles = TRUE`).
+
+These tables are large (around 1.5 GB), so they are written once.
+If the option `reproducible.destinationPathShared` is set, they are written there and hard linked into the `outputPath`; otherwise they are written to the `outputPath`.
+Their paths are the module outputs `speciesTableFactorial_path` and `cohortDataFactorial_path`, which are used by *Biomass_speciesParameters*.
+
+### Module outputs {#bsppfact-outputs}
 
 Description of the module outputs (Table \@ref(tab:moduleOutputs-Biomass-speciesFactorial)).
 
@@ -97,122 +124,37 @@ knitr::kable(df_outputs, caption = "List of (ref:Biomass-speciesFactorial) outpu
   kableExtra::kable_styling(latex_options = "scale_down", full_width = TRUE)
 ```
 
-## Usage
+## Usage {#bsppfact-example}
 
-<!-- TODO: updates and testing needed -->
+A small factorial design, run on its own:
 
-:::{.rmdwarning}
-⚠️ this section is very out of date and is unlikely to work ⚠️
-:::
-
-```{r module_usage}
-## This script is for running the species traits factorial design.
-## It requires a version of Biomass_core that is .gitignored:
-##  - the version had many changes to accommodate the 'no regeneration' scenario;
-## - many of the other changes have been subsequently incorporated into Biomass_core, so it may work with a newer version
-options(
-  reproducible.cacheSaveFormat = "qs2",
-  reproducible.showSimilar = TRUE,
-  reproducible.showSimilarDepth = 5,
-  reproducible.useMemoise = FALSE,
-  spades.moduleCodeChecks = FALSE,
-  spades.recoveryMode = FALSE
-)
-
-## Packages
-if (!require("Require")) {
-  install.packages("Require")
-  require("Require")
-}
-Require("PredictiveEcology/SpaDES.install", upgrade = FALSE)
-installSpaDES()
-Require(
-  c("PredictiveEcology/SpaDES.core@development (== 1.0.9.9004)", "reproducible"),
-  upgrade = FALSE
-)
-
-## Modules
-setPaths(
-  rasterPath = tempdir(),
-  cachePath = file.path(tempdir(), "Cache"),
-  modulePath = file.path("modules"),
-  inputPath = file.path(getwd(), "inputs"),
-  outputPath = file.path(getwd(), "outputs")
-)
-
-moduleNameAndBranch <- c("Biomass_speciesParameters@EliotTweaks", "Biomass_speciesFactorial@main")
-lapply(moduleNameAndBranch, function(modName) {
-  Cache(getModule, file.path("PredictiveEcology", modName), overwrite = TRUE)
-})
-modules <- gsub("@.+", "", moduleNameAndBranch)
-modules <- c("Biomass_speciesFactorial", modules)
-
-outputs <- data.frame(expand.grid(
-  objectName = c("species", "speciesEcoregion"),
-  saveTime = 0,
-  eventPriority = 10,
-  fun = "qs2::qs_save",
-  stringsAsFactors = FALSE
-))
-
-## Slow and large :
-## -- longevity 600 would be too big, use 400;
-objects <- list(
-  argsForFactorial = list(
-    cohortsPerPixel = 1:2,
-    growthcurve = seq(0.65, 0.85, 0.02),
-    mortalityshape = seq(20, 25, 1),
-    longevity = seq(125, 400, 25),
-    mANPPproportion = seq(3.5, 6, 0.25)
-  )
-)
-
-## Fast
-objects <- list(
-  argsForFactorial = list(
-    cohortsPerPixel = 1:2,
-    growthcurve = seq(0.65, 0.85, 0.1),
-    mortalityshape = seq(20, 25, 5),
-    longevity = seq(125, 600, 100),
-    mANPPproportion = seq(3.5, 6, 1)
-  )
-)
-## Medium
-objects <- list(
-  argsForFactorial = list(
-    cohortsPerPixel = 1:2,
-    growthcurve = seq(0.65, 0.85, 0.02),
-    mortalityshape = seq(20, 25, 2),
-    longevity = seq(125, 600, 50),
-    mANPPproportion = seq(3.5, 6, 0.3)
-  )
-)
-
-simOut <- simInitAndSpades(
+```{r module-usage-Biomass-speciesFactorial}
+out <- SpaDES.project::setupProject(
+  modules = "PredictiveEcology/Biomass_speciesFactorial@development",
   times = list(start = 0, end = 0),
-  modules = modules,
   params = list(
-    Biomass_speciesFactorial = list(.plots = NA, runExperiment = TRUE),
-    Biomass_speciesParameters = list(.plots = "pdf")
-  ),
-  outputs = outputs,
-  objects = objects,
-  debug = 1
+    Biomass_speciesFactorial = list(factorialSize = "small", .plots = "png")
+  )
 )
+sim <- SpaDES.core::simInitAndSpades2(out)
+
+## the factorial species traits table
+speciesTableFactorial <- arrow::open_dataset(sim$speciesTableFactorial_path, format = "feather")
 ```
 
+In a project that also uses *Biomass_speciesParameters* (e.g. with the other LandR Biomass modules), *Biomass_speciesFactorial* runs before it and passes it the paths of the two tables, so only `"PredictiveEcology/Biomass_speciesFactorial@development"` needs to be added to `modules`.
 
-### Links to other modules
+### Links to other modules {#bsppfact-links-modules}
 
 - <https://github.com/PredictiveEcology/Biomass_speciesData>;
-- <https://github.com/PredictiveEcology/Biomass_speciesParameterization>;
+- <https://github.com/PredictiveEcology/Biomass_speciesParameters>;
 - <https://github.com/PredictiveEcology/Biomass_borealDataPrep>;
 - <https://github.com/PredictiveEcology/Biomass_core>;
 
-### Getting help
+### Getting help {#bsppfact-help}
 
 - <https://github.com/PredictiveEcology/Biomass_speciesFactorial/issues>
 
-## References
+## References {#bsppfact-refs}
 
 <!-- autogenerated from bibligraphy -->
