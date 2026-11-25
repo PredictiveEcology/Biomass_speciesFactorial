@@ -1,7 +1,7 @@
 ---
 title: "Biomass_speciesFactorial Manual"
 subtitle: "v.1.1.0.9000"
-date: "Last updated: 2026-11-24"
+date: "Last updated: 2026-11-25"
 output:
   bookdown::html_document2:
     toc: true
@@ -228,15 +228,25 @@ Table \@ref(tab:eventObjects-Biomass-speciesFactorial) lists, for each object, t
    <td style="text-align:left;"> .inputObjects (default) </td>
    <td style="text-align:left;"> init: Init() </td>
   </tr>
-  <tr grouplength="1"><td colspan="3" style="border-bottom: 1px solid;"><strong>Outputs</strong></td></tr>
+  <tr grouplength="3"><td colspan="3" style="border-bottom: 1px solid;"><strong>Outputs</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> factorialOutputs </td>
    <td style="text-align:left;"> init: Init() </td>
+   <td style="text-align:left;"> init (own code) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> cohortDataFactorial_path </td>
+   <td style="text-align:left;"> save </td>
+   <td style="text-align:left;">  </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;" indentlevel="1"> speciesTableFactorial_path </td>
+   <td style="text-align:left;"> save </td>
    <td style="text-align:left;">  </td>
   </tr>
 </tbody>
 <tfoot><tr><td style="padding: 0; " colspan="100%">
-<sup></sup> Not shown, touching no object in the metadata: init: RunExperiment(), init: ReadExperimentFiles(), plot, save. Not traced to any code (e.g. reached indirectly): cohortDataFactorial_path, speciesTableFactorial_path.</td></tr></tfoot>
+<sup></sup> Not shown, touching no object in the metadata: init: RunExperiment(), init: ReadExperimentFiles(), plot.</td></tr></tfoot>
 </table>
 
 
@@ -253,6 +263,22 @@ during simInit: defaults for inputs not supplied
 init event, step 1 of 3
 
 ![](figures/Biomass_speciesFactorial_io_init_Init.png){width=100%}
+
+
+
+#### init (own code) {-}
+
+the init event's own code, outside the functions it calls
+
+![](figures/Biomass_speciesFactorial_io_init_own.png){width=100%}
+
+
+
+#### save {-}
+
+once, at start
+
+![](figures/Biomass_speciesFactorial_io_save.png){width=100%}
 
 ### Plotting
 
