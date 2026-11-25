@@ -10,6 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = "ctb")
   ),
   childModules = character(0),
+  loadOrder = list(after = "Biomass_borealDataPrep"), # it needs the `species` it creates
   version = list(Biomass_speciesFactorial = "1.1.0.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -43,6 +44,11 @@ defineModule(sim, list(
                           "specify either 'small', 'medium' or 'large' to take default ones that",
                           "have different numbers of factorial combinations.",
                           "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
+    defineParameter("longevityFromSpecies", "logical", TRUE, NA, NA,
+                    paste("If `TRUE` and the `species` input is available, the `longevity` values of",
+                          "`argsForFactorial` are replaced by the (unique) longevities of `species`, so that every",
+                          "species is simulated with exactly its own `longevity`, instead of with the nearest values",
+                          "of a fixed grid. If `FALSE` or `species` is absent, `argsForFactorial$longevity` is used.")),
     defineParameter("initialB", "numeric", 10, 1, NA,
                     paste("initial cohort biomass at `age = 1`.",
                           "If `NA`, will use `maxBInFactorial / 30` akin to the",
@@ -69,6 +75,11 @@ defineModule(sim, list(
                    "they each should take. Internally, this module will run `expand.grid` on these,",
                    "then will take the 'upper triangle' of the array, including the diagonal."
                  ),
+                 sourceURL = NA),
+    expectsInput("species", "data.table",
+                 desc = paste("Optional. Invariant species traits table from `Biomass_borealDataPrep`, with a `longevity`",
+                              "column. If supplied (and `P(sim)$longevityFromSpecies` is `TRUE`), the factorial uses",
+                              "the longevities of these species."),
                  sourceURL = NA)
   ),
   outputObjects = bindrows(
@@ -176,6 +187,12 @@ Init <- function(sim) {
       stop("P(sim)$initialB must be greater than P(sim)$minCohortBiomass ",
            "or all cohorts will be removed during factorial simulation.")
     }
+  }
+
+  if (isTRUE(P(sim)$longevityFromSpecies) && suppliedElsewhere("species", sim)) {
+    sim$argsForFactorial$longevity <- speciesLongevities(sim$species)
+    message("Biomass_speciesFactorial: factorial `longevity` set to those of `species`: ",
+            paste(sim$argsForFactorial$longevity, collapse = ", "))
   }
 
   ## The goal of this Init is to get the list of files so that we can "skip" the main runExperiment event

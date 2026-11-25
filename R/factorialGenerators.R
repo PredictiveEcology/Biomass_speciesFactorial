@@ -138,3 +138,15 @@ factorialPixelGroupMap <- function(cohortData) {
   pixelGroupMap[] <- vals
   pixelGroupMap
 }
+
+#' Longevities of a species table, as values for the factorial's `longevity`
+#'
+#' @param species A table with a `longevity` column.
+#' @return Sorted unique integer longevities.
+#' @export
+speciesLongevities <- function(species) {
+  if (!"longevity" %in% names(species)) {
+    stop("`species` needs a `longevity` column")
+  }
+  sort(unique(as.integer(round(species$longevity))))
+}

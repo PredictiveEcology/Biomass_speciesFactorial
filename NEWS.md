@@ -2,6 +2,7 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_speciesFactorial/iss
 
 # Biomass_speciesFactorial (development version)
 
+* The factorial now uses each species' own longevity. New parameter `longevityFromSpecies` (default `TRUE`) and optional input `species` (from `Biomass_borealDataPrep`): the `longevity` values of `argsForFactorial` are replaced by the unique longevities in `species`. Before, longevity came from a fixed grid (125, 175, ..., 575) that rarely contained a species' longevity, so `Biomass_speciesParameters` averaged the two nearest grid values and returned a slightly different longevity than the species table (e.g. 240 became 253). Now the values match exactly. This changes the factorial's digest, so it is rerun once. Set `longevityFromSpecies = FALSE` for the old behaviour. The module loads after `Biomass_borealDataPrep`.
 * The README shows the module's events, the objects each reads and writes, and a figure per event, generated from the code (needs SpaDES.core 3.2.1.9068 or later; older versions leave them out).
 
 # Biomass_speciesFactorial 1.1.0
