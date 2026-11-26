@@ -159,7 +159,7 @@ Summary of user-visible parameters (Table \@ref(tab:moduleParams-Biomass-species
    <td style="text-align:left;"> 10 </td>
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> initial cohort biomass at `age = 1`. If `NA`, will use `maxBInFactorial / 30` akin to the LANDIS-II Biomass Succession default. Must be greater than `P(sim)$minCohortBiomass` </td>
+   <td style="text-align:left;"> initial cohort biomass at `age = 1`. If `NA`, each cohort starts at its species' `maxANPP`, as a new cohort on bare ground does in LANDIS-II Biomass Succession and in `Biomass_core`. Must be greater than `P(sim)$minCohortBiomass` </td>
    <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>

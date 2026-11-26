@@ -3,6 +3,7 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_speciesFactorial/iss
 # Biomass_speciesFactorial (development version)
 
 * The README shows the module's events, the objects each reads and writes, and a figure per event, generated from the code (needs SpaDES.core 3.2.1.9068 or later; older versions leave them out).
+* `initialB = NA` now starts each cohort at its species' `maxANPP`, as LANDIS-II Biomass Succession and `Biomass_core` (with `initialB = NA`) start a new cohort on bare ground. Before, every cohort started at `maxBInFactorial / 30` (167 with the default 5000), which the documentation called the LANDIS-II default; `maxB / 30` is LandR's default for `maxANPP`, not a rule for initial biomass. `NA` runs get a new digest, so they rerun once; a numeric `initialB` (the default, 10) keeps its digest and results.
 
 # Biomass_speciesFactorial 1.1.0
 

@@ -85,6 +85,10 @@ factorialSpeciesTable <- function(growthcurve = seq(0.65, 0.85, 0.02),
 #'
 #' Must have `species` and `pixelGroup`.
 #'
+#' @param initialB the biomass of every cohort at `age = 1`; if `NA`, each cohort starts at its
+#'   species' `maxANPP`, as a new cohort on bare ground does in LANDIS-II Biomass Succession
+#'   (`maxANPP * exp(-1.6 * 0 / maxB)`) and in `Biomass_core` with `initialB = NA`.
+#'
 #' @export
 #' @importFrom data.table set setcolorder
 factorialCohortData <- function(speciesTable, speciesEcoregion, initialB) {
@@ -97,8 +101,12 @@ factorialCohortData <- function(speciesTable, speciesEcoregion, initialB) {
   set(cohortData2, NULL, "age", 1L)
 
   set(cohortData2, NULL, "ecoregionGroup", factor(1))
-  # set(cohortData2, NULL, "B", speciesEcoregion$maxANPP) # Default LANDIS
-  set(cohortData2, NULL, "B", initialB)
+  if (is.null(initialB) || isTRUE(is.na(initialB))) {
+    ## rows match `speciesEcoregion` (checked above)
+    set(cohortData2, NULL, "B", asInteger(speciesEcoregion$maxANPP))
+  } else {
+    set(cohortData2, NULL, "B", initialB)
+  }
   setcolorder(cohortData2, c('speciesCode', 'pixelGroup', 'ecoregionGroup', 'age', "B"))
 }
 
