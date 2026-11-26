@@ -45,8 +45,8 @@ defineModule(sim, list(
                           "Smaller is faster and uses less RAM; larger is slower and uses more RAM.")),
     defineParameter("initialB", "numeric", 10, 1, NA,
                     paste("initial cohort biomass at `age = 1`.",
-                          "If `NA`, will use `maxBInFactorial / 30` akin to the",
-                          "LANDIS-II Biomass Succession default.",
+                          "If `NA`, each cohort starts at its species' `maxANPP`, as a new cohort on",
+                          "bare ground does in LANDIS-II Biomass Succession and in `Biomass_core`.",
                           "Must be greater than `P(sim)$minCohortBiomass`")),
     defineParameter("maxBInFactorial", "integer", 5000L, NA, NA,
                     paste("The arbitrary maximum biomass for the factorial simulations.",
@@ -225,6 +225,9 @@ factorialOutputs <- function(times, paths) {
 
 ## Everything that defines the content of the factorial; names its files and keys its caches
 factorialDigest <- function(argsForFactorial, initialB, minCohortBiomass, maxBInFactorial) {
+  ## `NA` is keyed by its rule, so a factorial built under the old `NA` rule (`maxBInFactorial / 30`)
+  ## is not reused; a numeric `initialB` keeps its digest
+  if (is.null(initialB) || isTRUE(is.na(initialB))) initialB <- "maxANPP"
   CacheDigest(list(argsForFactorial, initialB, minCohortBiomass, maxBInFactorial))$outputHash
 }
 
@@ -284,8 +287,10 @@ RunExperiment <- function(speciesTableFactorial, maxBInFactorial,
   ) |>
     Cache(.cacheExtra = knownDigest, omitArgs = c("speciesTable"))
 
-  if (is.na(initialB)) {
-    initialB <- as.integer(round(maxBInFactorial / 30)) #LANDIS-II BSM default
+  ## `initialB = NA`: each cohort starts at its species' maxANPP (see factorialCohortData())
+  if ((is.null(initialB) || isTRUE(is.na(initialB))) && any(speciesEcoregion$maxANPP <= minCohortB)) {
+    stop("With `initialB = NA` cohorts start at `maxANPP`, which must be greater than ",
+         "`minCohortBiomass`: raise `maxBInFactorial` or the smallest `mANPPproportion`.")
   }
 
   cohortData <- factorialCohortData(speciesTableFactorial, speciesEcoregion, initialB = initialB) |>
